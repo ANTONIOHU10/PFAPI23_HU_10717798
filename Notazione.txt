@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 /**
  * 0. in ogni stazione è costretto di cambiare auto
@@ -18,7 +17,7 @@ int main() {
     char riga[5000];
 
     //separatore di riga
-    const char separatore[] = " ";
+    const char separatore[2] = " ";
     char *token;
 
     //leggere una riga di comando
@@ -29,27 +28,11 @@ int main() {
 
         //separa la riga in token
         token= strtok(riga, separatore);
-        if(strcmp(token,"aggiungi-stazione") ==0 ){
-            printf("+Caso aggiungi stazione\n");
+        while (token != NULL) {
+            //printf("%s\n", token);
 
-            //ottengo la distanza stazione
             token = strtok(NULL, separatore);
-            int distanza = atoi(token);
-            printf("Distanza: %d\n",distanza);
-            //ottengo il numero di auto
-            token = strtok(NULL, separatore);
-            int numeroAuto = atoi(token);
-            printf("Numero auto: %d\n",numeroAuto);
-            //ottengo la autonomia di ogni auto
-            for(int i=0;i<numeroAuto;i++){
-                //ottengo la targa
-                token = strtok(NULL, separatore);
-                int autonomia = atoi(token);
-                printf("Autonomia: %d\n",autonomia);
-            }
-
         }
-
     }
 
     return 0;
