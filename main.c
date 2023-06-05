@@ -50,7 +50,9 @@
 
     int trovaAutonomiaMassima(int distanza);
 
+    void stampaArchi();
     void stampaStazioni();
+    int esisteArco(int partenza, int destinazione);
     int main() {
 
         //dichiarazione per lettura
@@ -177,6 +179,7 @@
             }
             else if(strcmp(token,"test") ==0){
                 stampaStazioni();
+                stampaArchi();
             }
             else{
                 printf("Caso non riconosciuto\n");
@@ -326,6 +329,21 @@
             autostrada.stazioni[indice].numeroAuto++;
             autostrada.stazioni[indice].autoveicoli = realloc(autostrada.stazioni[indice].autoveicoli, autostrada.stazioni[indice].numeroAuto * sizeof(int));
             autostrada.stazioni[indice].autoveicoli[autostrada.stazioni[indice].numeroAuto - 1] = autonomia;
+
+            // Aggiunta degli archi per le stazioni raggiungibili
+            for (int i = 0; i < autostrada.numeroStazioni; i++) {
+                if (i != indice) {
+                    int autonomia_massima_i = trovaAutonomiaMassima(autostrada.stazioni[i].distanza);
+                    int autonomia_massima_nuova = trovaAutonomiaMassima(distanza);
+
+                    // Verifica se la stazione con l'auto appena aggiunta può raggiungere la stazione i
+                    // e se non esiste già un arco tra le due stazioni
+                    if (autonomia_massima_nuova >= abs(autostrada.stazioni[i].distanza - distanza) && !esisteArco(indice, i)) {
+                        aggiungiArco(indice, i, abs(autostrada.stazioni[i].distanza - distanza));
+                        printf("Da stazione %d a stazione %d arco aggiunto\n", indice, i);
+                    }
+                }
+            }
             return 1;
         } else {
             return 0;
@@ -361,6 +379,18 @@
                 autostrada.stazioni[indice_stazione].autoveicoli[indice_auto] = autostrada.stazioni[indice_stazione].autoveicoli[autostrada.stazioni[indice_stazione].numeroAuto - 1];
                 autostrada.stazioni[indice_stazione].numeroAuto--;
                 autostrada.stazioni[indice_stazione].autoveicoli = realloc(autostrada.stazioni[indice_stazione].autoveicoli, autostrada.stazioni[indice_stazione].numeroAuto * sizeof(int));
+
+                // Rimuovi gli archi che non sono più raggiungibili
+                int autonomia_massima= trovaAutonomiaMassima(distanza);
+                for(int i = 0; i < autostrada.numeroArchi; i ++){
+                    if(autostrada.archi[i].partenza == indice_stazione){
+                        if(autonomia_massima<abs(autostrada.archi[i].partenza-autostrada.archi[i].destinazione) || autostrada.stazioni[indice_stazione].numeroAuto==0){
+                            printf("trovato arco da rimuovere\n");
+                            rimuoviArco(autostrada.archi[i].partenza,autostrada.archi[i].destinazione);
+                        }
+                    }
+                }
+
                 return 1;
             } else {
                 return 0;
@@ -412,4 +442,21 @@
             }
             printf("\n");
         }
+    }
+// Funzione per stampare le informazioni sugli archi
+    void stampaArchi() {
+        printf("Archi:\n");
+        for (int i = 0; i < autostrada.numeroArchi; i++) {
+            printf("Partenza: %d - Destinazione: %d - Peso: %d\n", autostrada.archi[i].partenza, autostrada.archi[i].destinazione, autostrada.archi[i].peso);
+        }
+    }
+
+// Funzione per verificare l'esistenza di un arco nel grafo
+    int esisteArco(int partenza, int destinazione) {
+        for (int i = 0; i < autostrada.numeroArchi; i++) {
+            if (autostrada.archi[i].partenza == partenza && autostrada.archi[i].destinazione == destinazione) {
+                return 1; // L'arco esiste
+            }
+        }
+        return 0; // L'arco non esiste
     }
