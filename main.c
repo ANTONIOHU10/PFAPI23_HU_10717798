@@ -2,6 +2,7 @@
     #include <string.h>
     #include <stdlib.h>
 
+    #define INT_MAX 2147483647
     /**
      * 0. in ogni stazione è costretto di cambiare auto
      * 1. il numero di salto minore possibile
@@ -53,6 +54,12 @@
     void stampaArchi();
     void stampaStazioni();
     int esisteArco(int partenza, int destinazione);
+
+    int trovaIndiceStazione(int distanza);
+    void inizializzaDistanze(int *distanze, int* predecessori, int numeroStazioni);
+    void dijkstra(int partenza, int destinazione);
+
+
     int main() {
 
         //dichiarazione per lettura
@@ -103,7 +110,6 @@
                 }
 
             }
-
             else if(strcmp(token,"demolisci-stazione") ==0 ){
                 printf("+Caso rimuovi stazione\n");
                 //ottengo la distanza stazione
@@ -171,6 +177,14 @@
                 int stazione_destinazione = atoi(token);
                 printf("Stazione di destinazione: %d\n",stazione_destinazione);
 
+
+                if (trovaIndiceStazione(stazione_partenza) == -1 || trovaIndiceStazione(stazione_destinazione) == -1) {
+                printf("non esiste la partenza / destinazione\n");
+                } else {
+                    dijkstra(trovaIndiceStazione(stazione_partenza), trovaIndiceStazione(stazione_destinazione));
+                    //todo da verificare se il percorso scelto è quello migliore (se prende la stazione di servizio più vicina all'inizio, cioè valore più piccolo)
+                }
+
                 printf("---------------------Fine stampa percorso----------------\n");
             }
             else if(strcmp(token,"fine") ==0 ){
@@ -188,13 +202,7 @@
 
         return 0;
     }
-// Funzione per creare il grafo
-    void creaGrafo() {
-        autostrada.numeroStazioni = 0;
-        autostrada.numeroArchi = 0;
-        autostrada.stazioni = NULL;
-        autostrada.archi = NULL;
-    }
+
 // Funzione per aggiungere una stazione di servizio al grafo
     int aggiungiStazione(int distanza, int numeroAuto, int *autoveicoli) {
         // Verifica se la stazione esiste già
@@ -333,7 +341,7 @@
             // Aggiunta degli archi per le stazioni raggiungibili
             for (int i = 0; i < autostrada.numeroStazioni; i++) {
                 if (i != indice) {
-                    int autonomia_massima_i = trovaAutonomiaMassima(autostrada.stazioni[i].distanza);
+
                     int autonomia_massima_nuova = trovaAutonomiaMassima(distanza);
 
                     // Verifica se la stazione con l'auto appena aggiunta può raggiungere la stazione i
@@ -447,7 +455,10 @@
     void stampaArchi() {
         printf("Archi:\n");
         for (int i = 0; i < autostrada.numeroArchi; i++) {
-            printf("Partenza: %d - Destinazione: %d - Peso: %d\n", autostrada.archi[i].partenza, autostrada.archi[i].destinazione, autostrada.archi[i].peso);
+            int partenza = autostrada.stazioni[autostrada.archi[i].partenza].distanza;
+            int destinazione = autostrada.stazioni[autostrada.archi[i].destinazione].distanza;
+            printf("Partenza: %d - Destinazione: %d - Peso: %d\n", partenza, destinazione, autostrada.archi[i].peso);
+            //printf("Partenza: %d - Destinazione: %d - Peso: %d\n", autostrada.archi[i].partenza, autostrada.archi[i].destinazione, autostrada.archi[i].peso);
         }
     }
 
@@ -459,4 +470,85 @@
             }
         }
         return 0; // L'arco non esiste
+    }
+
+    int trovaIndiceStazione(int distanza) {
+        for (int i = 0; i < autostrada.numeroStazioni; i++) {
+            if (autostrada.stazioni[i].distanza == distanza) {
+                return i;
+            }
+        }
+        return -1; // 如果未找到节点，返回-1
+    }
+
+    void inizializzaDistanze(int* distanze, int* predecessori, int n) {
+        for (int i = 0; i < n; i++) {
+            distanze[i] = INT_MAX;  // 初始化为无穷大距离
+            predecessori[i] = -1;   // 初始化为无前驱节点
+        }
+    }
+
+    void dijkstra(int stazione_partenza, int stazione_destinazione) {
+        int n = autostrada.numeroStazioni;
+        int* distanze = malloc(n * sizeof(int));
+        int* predecessori = malloc(n * sizeof(int));
+        int* visitati = malloc(n * sizeof(int));
+
+        inizializzaDistanze(distanze, predecessori, n);
+
+        distanze[stazione_partenza] = 0;
+
+        //inizializza memoria dei nodi visitati
+        memset(visitati, 0, n * sizeof(int));
+
+        for (int count = 0; count < n; count++) {
+            int u = -1;
+            for (int i = 0; i < n; i++) {
+                if (!visitati[i] && (u == -1 || distanze[i] < distanze[u])) {
+                    u = i;
+                }
+            }
+
+            visitati[u] = 1;
+
+            for (int i = 0; i < autostrada.numeroArchi; i++) {
+                if (autostrada.archi[i].partenza == u) {
+                    int v = autostrada.archi[i].destinazione;
+                    int peso = autostrada.archi[i].peso;
+
+                    if (!visitati[v] && distanze[u] != INT_MAX && distanze[u] + peso < distanze[v]) {
+                        distanze[v] = distanze[u] + peso;
+                        predecessori[v] = u;
+                    }
+                }
+            }
+        }
+
+        if (distanze[stazione_destinazione] != INT_MAX) {
+            printf("distanza minima：%d\n", distanze[stazione_destinazione]);
+            printf("percorso più corto：");
+
+            // 存储路径的临时数组
+            int* tempPath = malloc(n * sizeof(int));
+            int pathLength = 0;
+
+            int currentNode = stazione_destinazione;
+            while (currentNode != -1) {
+                tempPath[pathLength++] = autostrada.stazioni[currentNode].distanza;
+                currentNode = predecessori[currentNode];
+            }
+
+            // stampare in ordine inverso
+            for (int i = pathLength - 1; i >= 0; i--) {
+                printf("%d ", tempPath[i]);
+            }
+            printf("\n");
+            free(tempPath);
+        } else {
+            printf("***Non raggiungibile***\n");
+        }
+
+        free(distanze);
+        free(predecessori);
+        free(visitati);
     }
