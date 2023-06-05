@@ -1,39 +1,5 @@
-#include <stdio.h>
-#include <string.h>
-
-/**
- * 0. in ogni stazione è costretto di cambiare auto
- * 1. il numero di salto minore possibile
- * 2. stazione non ripetuta
- * 3. automobili possono avere la stessa autonomia
- * 4. quando si stampa il percorso, si deve includere anche la partenza e l'arrivo
- * 5. due sensi di percorrenza
- * 6. non tornare indietro
- * 7. ogni stazione può contenere al massimo 512 veicoli
- *
- */
-int main() {
-
-    char riga[5000];
-
-    //separatore di riga
-    const char separatore[2] = " ";
-    char *token;
-
-    //leggere una riga di comando
-    while (fgets(riga, 5000, stdin) != NULL) {
-
-        //tolgo ultimo \n newline letto da fgets
-        riga[strlen(riga) - 1] = '\0';
-
-        //separa la riga in token
-        token= strtok(riga, separatore);
-        while (token != NULL) {
-            //printf("%s\n", token);
-
-            token = strtok(NULL, separatore);
-        }
-    }
-
-    return 0;
-}
+1.riprovare a utilizzare struttura dati grafo orientato pesato
+2.ogni volta che aggiungo una stazione, verifico subito la sua raggiungibilità con le altre stazioni
+3.ogni volta che aggiungo una auto,verifico subito la sua raggiungibilità con le altre stazioni
+4.avendo questo grafo, posso usare l'algoritmo di Dijkstra per traovre il percorso più corto
+    4.1 aggiungendo dei vincoli
