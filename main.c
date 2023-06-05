@@ -175,6 +175,9 @@
                 printf("+Caso fine\n");
                 break;
             }
+            else if(strcmp(token,"test") ==0){
+                stampaStazioni();
+            }
             else{
                 printf("Caso non riconosciuto\n");
             }
@@ -213,13 +216,15 @@
             int autonomia_massima_nuova = trovaAutonomiaMassima(distanza);
 
             // Verifica se la stazione i può raggiungere la nuova stazione
-            if (autonomia_massima_i >= distanza - autostrada.stazioni[i].distanza) {
-                aggiungiArco(i, autostrada.numeroStazioni - 1, distanza - autostrada.stazioni[i].distanza);
+            if (autonomia_massima_i >= abs(distanza - autostrada.stazioni[i].distanza)) {
+                aggiungiArco(i, autostrada.numeroStazioni - 1, abs(distanza - autostrada.stazioni[i].distanza));
+                printf("da stazione %d a stazione %d arco aggiunto\n", i, autostrada.numeroStazioni - 1);
             }
 
             // Verifica se la nuova stazione può raggiungere la stazione i
-            if (autonomia_massima_nuova >= autostrada.stazioni[i].distanza - distanza) {
-                aggiungiArco(autostrada.numeroStazioni - 1, i, autostrada.stazioni[i].distanza - distanza);
+            if (autonomia_massima_nuova >= abs(autostrada.stazioni[i].distanza - distanza)) {
+                aggiungiArco(autostrada.numeroStazioni - 1, i, abs(autostrada.stazioni[i].distanza - distanza));
+                printf("da stazione %d a stazione %d arco aggiunto\n", autostrada.numeroStazioni - 1, i);
             }
         }
         return 1;
