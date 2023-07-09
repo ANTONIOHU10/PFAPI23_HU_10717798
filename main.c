@@ -2,16 +2,25 @@
 #include <string.h>
 #include <stdlib.h>
 
-//todo struttura max heap per le auto
+//struttura per le auto
 struct Heap_auto{
     //è un tipo di search tree, ma utilizza un array dinamico per salvare i dati
     int *autonomie;
     int numero_auto;
     int capacita;
 };
-
-
 typedef struct Heap_auto heap_auto;
+
+//struttura per le stazioni, AVL tree
+struct Stazione{
+    int distanza;
+    struct Stazione* sinistro;
+    struct Stazione* destro;
+    int altezza;
+    struct Heap_auto* heap_auto;
+};
+typedef struct Stazione stazione;
+
 
 heap_auto* creazioneHeapAuto(int numero, int* valori);
 void inserimentoAusiliare(heap_auto* h, int indice);
@@ -22,18 +31,62 @@ void rimuoviElemento(heap_auto* h,int elemento);
 void inserimento(heap_auto* h, int data);
 void printHeap(heap_auto* h);
 
-int main() {
-    /*
-    //test
-    int arr[9] = {1,2,3,4,5,6,7,8,9};
-    heap_auto* heap = creazioneHeapAuto(9,arr);
-    printHeap(heap);
-    estrarreMassimo(heap);
-    printHeap(heap);
-    */
 
+
+int ottieniAltezza(stazione* nodo);
+int massimo(int a, int b);
+stazione* creaNodo(int distanza, heap_auto* heapAuto);
+int ottieniDifferenza(stazione* nodo);
+void aggiornoAltezza(stazione* nodo);
+stazione* rotazioneDestra(stazione* y);
+stazione* rotazioneSinistra(stazione* x);
+stazione* inserimentoAVL(stazione* stazione, int distanza, heap_auto* heapAuto);
+stazione* trovaMinimo(stazione* nodo);
+stazione* cancellaNodo(stazione* root, int distanza);
+void freeAVL(stazione* root);
+stazione* trovaNodo(stazione* radice, int distanza);
+stazione* trovaStazione(stazione* root, int distanza);
+void printAVL(stazione* root);
+
+int main() {
+
+
+    //TODO----------------TEST AVLA-------------------------------
+    stazione* radice = NULL;
+
+    int array1[10] = {1,2,3,4,5,6,7,8,9,10};
+    int array2[9] = {1,2,3,4,5,6,7,8,9};
+    int array3[8] = {1,2,3,4,5,6,7,8};
+    heap_auto* heap1 = creazioneHeapAuto(10,array1);
+    heap_auto* heap2 = creazioneHeapAuto(9,array2);
+    heap_auto* heap3 = creazioneHeapAuto(8,array3);
+    int distanza1 = 10;
+    int distanza2 = 20;
+    int distanza3 = 30;
+    radice = inserimentoAVL(radice,distanza1,heap1);
+    radice = inserimentoAVL(radice,distanza2,heap2);
+    radice = inserimentoAVL(radice,distanza3,heap3);
+
+    printf("%d\n",ottengoMassimo(trovaStazione(radice, 10)->heap_auto));
+
+    printHeap(trovaStazione(radice, 10)->heap_auto);
+    printHeap(trovaStazione(radice, 20)->heap_auto);
+    printHeap(trovaStazione(radice, 30)->heap_auto);
+
+    cancellaNodo(radice, 10);
+    printf("---------------------------------------------------------\n");
+    printAVL(radice);
+
+    freeAVL(radice);
+
+
+
+
+
+
+    //TODO----------------TEST AVLA-------------------------------
     //file da leggere
-    FILE *file = fopen("open_8.txt","r");
+    FILE *file = fopen("open_3.txt","r");
 
     //file da scrivere
     FILE *file_out = fopen("a_OUTPUT_TEST.txt","w");
@@ -273,3 +326,225 @@ void printHeap(heap_auto* h){
     printf("\n");
 }
 
+int ottieniAltezza(stazione* nodo){
+    if(nodo == NULL){
+        return 0;
+    }
+    return nodo->altezza;
+}
+
+int massimo(int a, int b){
+    if(a > b){
+        return a;
+    }
+    return b;
+}
+//creazione un nodo nuovo
+stazione* creaNodo(int distanza, heap_auto* heapAuto){
+    stazione *nodo = (stazione*)malloc(sizeof(stazione));
+    nodo->distanza = distanza;
+    nodo->sinistro = NULL;
+    nodo->destro = NULL;
+    nodo->altezza = 1;
+
+    nodo->heap_auto = heapAuto;
+    return nodo;
+}
+
+//funzione che tiene conto della differenza di altezza tra il nodo sinistro e destro
+//perché in un albero AVL, la differenza di altezza tra il nodo sinistro e destro non può essere maggiore di 1
+int ottieniDifferenza(stazione* nodo){
+    if(nodo == NULL){
+        return 0;
+    }
+    return ottieniAltezza(nodo->sinistro) - ottieniAltezza(nodo->destro);
+}
+
+void aggiornoAltezza(stazione* nodo){
+    if(nodo == NULL){
+        return;
+    }
+    nodo->altezza = 1 + massimo(ottieniAltezza(nodo->sinistro),ottieniAltezza(nodo->destro));
+}
+
+//rotazione destra
+stazione* rotazioneDestra(stazione* y){
+    stazione* x = y->sinistro;
+    stazione* T2 = x->destro;
+
+    //rotazione
+    x->destro = y;
+    y->sinistro = T2;
+
+    //aggiorno altezza
+    aggiornoAltezza(y);
+    aggiornoAltezza(x);
+
+    return x;
+}
+//rotazione sinistra
+stazione* rotazioneSinistra(stazione* x){
+    stazione* y = x->destro;
+    stazione* T2 = y->sinistro;
+
+    //rotazione
+    y->sinistro = x;
+    x->destro = T2;
+
+    //aggiorno altezza
+    aggiornoAltezza(x);
+    aggiornoAltezza(y);
+
+    return y;
+}
+
+//funzione che inserisce un nodo nell'albero AVL
+stazione* inserimentoAVL(stazione* stazione, int distanza, heap_auto* heapAuto){
+    //inserimento normale
+    if(stazione == NULL){
+        return creaNodo(distanza,heapAuto);
+    }
+
+    //inserimento sinistro
+    if(distanza < stazione->distanza){
+        stazione->sinistro = inserimentoAVL(stazione->sinistro,distanza,heapAuto);
+    }
+    //inserimento destro
+    else if(distanza > stazione->distanza){
+        stazione->destro = inserimentoAVL(stazione->destro,distanza,heapAuto);
+    }
+    //inserimento non permesso
+    else{
+        return stazione;
+    }
+
+    //aggiorno altezza
+    aggiornoAltezza(stazione);
+
+    //controllo la differenza di altezza
+    int differenza = ottieniDifferenza(stazione);
+
+    //controllo se la differenza è maggiore di 1
+    //e se il nodo inserito è minore del nodo sinistro
+    //allora faccio una rotazione a destra
+    if(differenza > 1 ){
+        if(distanza < stazione->sinistro->distanza){
+            return rotazioneDestra(stazione);
+        } else if(distanza > stazione->sinistro->distanza){
+            //altrimenti faccio una rotazione a sinistra
+            stazione->sinistro = rotazioneSinistra(stazione->sinistro);
+            return rotazioneDestra(stazione);
+        }
+    } else if(differenza < -1){
+        if(distanza > stazione->destro->distanza){
+            return rotazioneSinistra(stazione);
+        } else if(distanza < stazione->destro->distanza){
+            stazione->destro = rotazioneDestra(stazione->destro);
+            return rotazioneSinistra(stazione);
+        }
+    }
+
+    return stazione;
+}
+
+stazione* trovaMinimo(stazione* nodo){
+    stazione* current = nodo;
+
+    while(current->sinistro != NULL){
+        current = current->sinistro;
+    }
+
+    return current;
+}
+
+stazione* cancellaNodo(stazione* root, int distanza){
+    if(root == NULL){
+        return root;
+    }
+
+    if(distanza < root->distanza) {
+        root->sinistro = cancellaNodo(root->sinistro,distanza);
+    } else if(distanza > root->distanza){
+        root->destro = cancellaNodo(root->destro,distanza);
+    } else{
+        if(root->sinistro == NULL || root->destro == NULL){
+            stazione* temp = root->sinistro ? root->sinistro : root->destro;
+
+            if(temp == NULL){
+                temp = root;
+                root = NULL;
+            } else{
+                *root = *temp;
+            }
+            free(temp);
+        } else{
+            stazione* temp = trovaMinimo(root->destro);
+
+            root->distanza = temp->distanza;
+            root->heap_auto = temp->heap_auto;
+            root->destro = cancellaNodo(root->destro,temp->distanza);
+
+        }
+    }
+    aggiornoAltezza(root);
+
+    int differenza = ottieniDifferenza(root);
+    if(differenza >1) {
+        if(ottieniDifferenza(root->sinistro) >= 0){
+            return rotazioneDestra(root);
+        } else{
+            root->sinistro = rotazioneSinistra(root->sinistro);
+            return rotazioneDestra(root);
+        }
+    } else if (differenza<-1){
+        if(ottieniDifferenza(root->destro) <= 0){
+            return rotazioneSinistra(root);
+        } else{
+            root->destro = rotazioneDestra(root->destro);
+            return rotazioneSinistra(root);
+        }
+    }
+
+    return root;
+}
+
+void freeAVL(stazione* root){
+    if(root == NULL){
+        return;
+    }
+    freeAVL(root->sinistro);
+    freeAVL(root->destro);
+    free(root->heap_auto->autonomie);
+    free(root->heap_auto);
+    free(root);
+}
+
+//trovare la stazione con la distanza indicata
+stazione* trovaStazione(stazione* root, int distanza){
+    if(root == NULL){
+        return NULL;
+    }
+    if(root->distanza == distanza){
+        return root;
+    }
+    if(root->distanza > distanza){
+        return trovaStazione(root->sinistro,distanza);
+    } else {
+        return trovaStazione(root->destro,distanza);
+    }
+
+}
+
+//funzione che stampa l'intero albero AVL
+void printAVL(stazione* root){
+    if(root == NULL){
+        return;
+    }
+    printAVL(root->sinistro);
+
+    printf("Distanza: %d\n",root->distanza);
+    printf("Numero veicoli: %d\n",root->heap_auto->numero_auto);
+    printHeap(root->heap_auto);
+
+    printAVL(root->destro);
+}
