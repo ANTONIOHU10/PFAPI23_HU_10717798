@@ -36,27 +36,57 @@
         char operazione[20];
         int distanza;
         int numero_auto;
+        int autonomia;
+
         int autonomie[512];
 
         //leggere una riga di comando
         while (fscanf(file,"%s",operazione) != EOF){
 
-            if(strcmp(operazione,"aggiungi-stazione") ==0) {
+            if(strcmp(operazione,"aggiungi-stazione") == 0) {
                 if(fscanf(file,"%d %d",&distanza, &numero_auto) != EOF){
                     for (int i = 0; i < numero_auto; i++){
                         if(fscanf(file,"%d",&autonomie[i]) != EOF){
                             //leggo una autonomia
-                            fprintf(file_out,"distanza: %d    numero_auto: %d\n",distanza,numero_auto);
+
                         }
 
                     }
                     //finisce di leggere le autonomie
+                    fprintf(file_out,"(aggiungi stazione)  distanza: %d    numero_auto: %d\n",distanza,numero_auto);
+
                     for(int j = 0; j < numero_auto; j++){
                         fprintf(file_out,"autonomia: %d\n",autonomie[j]);
                     }
 
                 }
             }
+
+            if(strcmp(operazione,"demolisci-stazione") == 0) {
+                if(fscanf(file,"%d",&distanza) != EOF){
+                    fprintf(file_out,"(demolisci stazione)   distanza: %d\n",distanza);
+                }
+            }
+
+            if(strcmp(operazione,"aggiungi-auto") == 0) {
+                if(fscanf(file,"%d %d",&distanza, &autonomia) != EOF){
+                    fprintf(file_out,"(aggiungi auto)   distanza: %d    autonomia: %d\n",distanza,autonomia);
+                }
+            }
+
+            if(strcmp(operazione, "rottama-auto") == 0) {
+                if(fscanf(file,"%d %d",&distanza,&autonomia) != EOF){
+                    fprintf(file_out,"(rottama auto)   stazione: %d  autonomia: %d\n",distanza,autonomia);
+                }
+            }
+
+            if(strcmp(operazione,"pianifica-percorso") == 0) {
+                int distanza_destinazione;
+                if(fscanf(file,"%d %d",&distanza,&distanza_destinazione) != EOF){
+                    fprintf(file_out,"(pianifica percorso)   partenza: %d  destinazione: %d\n",distanza,distanza_destinazione);
+                }
+            }
+
         }
         fclose(file);
         fclose(file_out);
