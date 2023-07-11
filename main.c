@@ -31,7 +31,7 @@ stazione* delete(stazione* root, int x);
 void inorder(stazione* root);
 void freeStazione(stazione* root);
 
-autonomie* new_node_autonomie(int x);
+autonomie* new_node_autonomia(int x);
 autonomie* search_autonomie(autonomie* root, int x);
 autonomie* insert_autonomie(autonomie* root, int x);
 autonomie* find_minimum_autonomie(autonomie* root);
@@ -44,20 +44,32 @@ int main() {
 
     //TODO----------------TEST AVL-------------------------------
     stazione* radice = NULL;
+    /*
     autonomie* auto_parcheggiate = NULL;
+    autonomie* auto_parcheggiate2 = NULL;
 
     //TODO   per cancellare i contenuti, devo avere una variabile che riceve il ritorno della funzione di creazione
     //TODO   e poi passare quella variabile alla funzione di cancellazione , altrimenti non posso cancellare
-    auto_parcheggiate = insert_autonomie(auto_parcheggiate, 10);
-    radice = insert(radice, 10, 10, auto_parcheggiate);
+    auto_parcheggiate = insert_autonomie(auto_parcheggiate, 1);
+    auto_parcheggiate = insert_autonomie(auto_parcheggiate, 2);
+    auto_parcheggiate = insert_autonomie(auto_parcheggiate, 3);
+
+    radice = insert(radice, 10, 3, auto_parcheggiate);
+    radice = insert(radice, 20, 0, auto_parcheggiate2);
+
+    inorder(radice);
+    printf("\n");
+    inorder_autonomie(auto_parcheggiate);
+    printf("\n");
+    inorder_autonomie(auto_parcheggiate2);
 
     freeStazione(search(radice,10));
-
+    */
     //TODO----------------TEST AVL-------------------------------
 
-    /*
+
     //file da leggere
-    FILE *file = fopen("open_1.txt","r");
+    FILE *file = fopen("open_104.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -76,7 +88,7 @@ int main() {
     int numero_auto;
     int autonomia;
 
-    int autonomie[512];
+    int autonomie_temp[512];
     // valore estremo
 
     //leggere una riga di comando
@@ -86,19 +98,56 @@ int main() {
         if(strcmp(operazione,"aggiungi-stazione") == 0) {
             if(fscanf(file,"%d %d",&distanza, &numero_auto) != EOF){
                 for (int i = 0; i < numero_auto; i++){
-                    if(fscanf(file,"%d",&autonomie[i]) != EOF){
+                    if(fscanf(file,"%d",&autonomie_temp[i]) != EOF){
                         //leggo una autonomia
                     }
                 }
-                fprintf(file_out,"(aggiungi stazione)   distanza: %d    numero auto: %d\n",distanza,numero_auto);
+                //se il numero di auto è maggiore di 512 non aggiungo la stazione
+                if(numero_auto>512){
+                    //printf("numero auto maggiore di 512\n");
+                    fprintf(file_out,"non aggiunta\n");
+                } else {
+                    //verifico se la stazione esiste già
+                    if(search(radice,distanza) != NULL){
+                        //printf("stazione già presente\n");
+                        fprintf(file_out,"non aggiunta\n");
+                    } else {
+                        //printf("aggiungo stazione\n");
+                        //salvo le autonomie in un albero
+                        autonomie* auto_parcheggiate = NULL;
+
+                        for(int i = 0; i < numero_auto; i++){
+                            auto_parcheggiate = insert_autonomie(auto_parcheggiate, autonomie_temp[i]);
+                        }
+                        radice = insert(radice, distanza, numero_auto, auto_parcheggiate);
+                        fprintf(file_out,"aggiunta\n");
+                        //fprintf(file_out,"(aggiungi stazione)   distanza: %d    numero auto: %d\n",distanza,numero_auto);
+                    }
+
+                }
 
             }
         }
 
         else if(strcmp(operazione,"demolisci-stazione") == 0) {
             if(fscanf(file,"%d",&distanza) != EOF){
-                   fprintf(file_out,"(demolisci stazione)   distanza: %d\n",distanza);
+                if(search(radice,distanza) == NULL){
+                    //non esiste la stazione
 
+                    //printf("stazione non presente\n");
+                    //printf("stazione %d non presente\n",distanza);
+                    fprintf(file_out,"non demolita\n");
+                } else {
+                    //esiste la stazione e la cancello
+
+                    //freeAutonomie(search(radice,distanza)->auto_parcheggiate);
+                    //search(radice,distanza)->auto_parcheggiate = NULL;
+                    //fixme: per le autonomie ho aggiunto una riga nella funzione delete per togliere tutte le autonomie
+                    //funziona per tutti  i test senza leak
+                    radice = delete(radice,distanza);
+
+                    fprintf(file_out,"demolita\n");
+                }
             }
         }
 
@@ -128,9 +177,10 @@ int main() {
 
     printf("---------------------------------------------------------\n");
 
+    inorder(radice);
+    freeStazione(radice);
     fclose(file);
     fclose(file_out);
-    */
 
     return 0;
 }
@@ -162,6 +212,8 @@ stazione* search(stazione* root, int x){
         return search(root->sinistro, x);
 }
 
+//x  = distanza
+//y = numero auto
 //inserimento nodo
 stazione* insert(stazione* root, int x, int y, autonomie* auto_parcheggiate){
     if (root == NULL)
@@ -180,6 +232,7 @@ stazione* find_minimum(stazione* root) {
         return find_minimum(root->sinistro);
     return root;
 }
+
 //todo > devo considerare anche l'albero l'interno di essa
 stazione* delete(stazione* root, int x) {
 
@@ -191,6 +244,8 @@ stazione* delete(stazione* root, int x) {
         root->sinistro = delete(root->sinistro, x);
     else {
         if (root->sinistro == NULL && root->destro == NULL){
+            //fixme aggiunta free, per togliere le autonomie, non so se c'è eventuale errore
+            freeAutonomie(root->auto_parcheggiate);
             free(root);
             return NULL;
         }
@@ -200,6 +255,8 @@ stazione* delete(stazione* root, int x) {
                 temp = root->destro;
             else
                 temp = root->sinistro;
+            //fixme aggiunta free, per togliere le autonomie, non so se c'è eventuale errore
+            freeAutonomie(root->auto_parcheggiate);
             free(root);
             return temp;
         }
@@ -222,6 +279,9 @@ void inorder(stazione *root){
     }
 }
 
+
+//   per cancellare i contenuti, devo avere una variabile che riceve il ritorno della funzione di creazione
+//   e poi passare quella variabile alla funzione di cancellazione , altrimenti non posso cancellare
 void freeStazione(stazione* root) {
     if (root == NULL)
         return;
