@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#define DIMENSIONE_PARCHEGGIO 512
 //struttura per le auto
 struct Heap_auto{
     //è un tipo di search tree, ma utilizza un array dinamico per salvare i dati
@@ -44,15 +44,17 @@ stazione* inserimentoAVL(stazione* stazione, int distanza, heap_auto* heapAuto);
 stazione* trovaMinimo(stazione* nodo);
 stazione* cancellaNodo(stazione* root, int distanza);
 void freeAVL(stazione* root);
-stazione* trovaNodo(stazione* radice, int distanza);
 stazione* trovaStazione(stazione* root, int distanza);
 void printAVL(stazione* root);
+int esisteStazione(stazione* root, int distanza);
 
 int main() {
 
 
-    //TODO----------------TEST AVLA-------------------------------
+    //TODO----------------TEST AVL-------------------------------
     stazione* radice = NULL;
+    /*
+    //fixme, forse perché non ho specificato capacita quindi c'è il problema di confronto
 
     int array1[10] = {1,2,3,4,5,6,7,8,9,10};
     int array2[9] = {1,2,3,4,5,6,7,8,9};
@@ -67,26 +69,25 @@ int main() {
     radice = inserimentoAVL(radice,distanza2,heap2);
     radice = inserimentoAVL(radice,distanza3,heap3);
 
-    printf("%d\n",ottengoMassimo(trovaStazione(radice, 10)->heap_auto));
-
+    //printf("%d\n",ottengoMassimo(trovaStazione(radice, 10)->heap_auto));
+    inserimento(heap1, 999);
+    inserimento(heap2, 999);
+    inserimento(heap3, 999);
     printHeap(trovaStazione(radice, 10)->heap_auto);
     printHeap(trovaStazione(radice, 20)->heap_auto);
     printHeap(trovaStazione(radice, 30)->heap_auto);
 
-    cancellaNodo(radice, 10);
+    //cancellaNodo(radice, 10);
     printf("---------------------------------------------------------\n");
     printAVL(radice);
 
-    freeAVL(radice);
+    //freeAVL(radice);
+    */
 
-
-
-
-
-
-    //TODO----------------TEST AVLA-------------------------------
+    //TODO----------------TEST AVL-------------------------------
     //file da leggere
-    FILE *file = fopen("open_3.txt","r");
+    FILE *file = fopen("open_111.txt","r");
+    printf("---------------------------------------------------------\n");
 
     //file da scrivere
     FILE *file_out = fopen("a_OUTPUT_TEST.txt","w");
@@ -108,6 +109,7 @@ int main() {
     // valore estremo
 
     //leggere una riga di comando
+
     while (fscanf(file,"%s",operazione) != EOF){
 
         if(strcmp(operazione,"aggiungi-stazione") == 0) {
@@ -118,25 +120,89 @@ int main() {
                     }
 
                 }
+                /*
                 //finisce di leggere le autonomie
                 fprintf(file_out,"(aggiungi stazione)  distanza: %d    numero_auto: %d\n",distanza,numero_auto);
 
                 for(int j = 0; j < numero_auto; j++){
                     fprintf(file_out,"autonomia: %d\n",autonomie[j]);
                 }
+                */
+
+               //non devo resettare il vettore, perché comunque legge solo N auto, quindi quelle rimaste non vengono lette
+               //quelle che servono vengono sovrascritti
+               //quindi devo passare il numero di auto che voglio leggere
+
+               //verifico se il numero di auto è superiore di 512
+               if(numero_auto > DIMENSIONE_PARCHEGGIO) {
+                   printf( "numero auto superiore a 512\n");
+               } else {
+                   //verifico se esiste già la stazione
+                   if(trovaStazione(radice,distanza)!=NULL){
+                       printf("esiste già la stazione %d \n",distanza);
+                       fprintf(file_out,"non aggiunta\n");
+                   }
+                   else {
+                       heap_auto* heapAuto = creazioneHeapAuto(numero_auto,autonomie);
+                       radice = inserimentoAVL(radice,distanza,heapAuto);
+                       fprintf(file_out,"aggiunta\n");
+                   }
+               }
 
             }
         }
 
         if(strcmp(operazione,"demolisci-stazione") == 0) {
             if(fscanf(file,"%d",&distanza) != EOF){
-                fprintf(file_out,"(demolisci stazione)   distanza: %d\n",distanza);
+
+                //fprintf(file_out,"(demolisci stazione)   distanza: %d\n",distanza);
+
+                //esiste la stazione da togliere
+                if(esisteStazione(radice,distanza) == 1){
+                    cancellaNodo(radice,distanza);
+                    fprintf(file_out,"demolita\n");
+                }
+                //non esiste la stazione da togliere
+                else {
+                    fprintf(file_out,"non demolita\n");
+                }
+
+
+
             }
         }
 
         if(strcmp(operazione,"aggiungi-auto") == 0) {
             if(fscanf(file,"%d %d",&distanza, &autonomia) != EOF){
-                fprintf(file_out,"(aggiungi auto)   distanza: %d    autonomia: %d\n",distanza,autonomia);
+                //fprintf(file_out,"(aggiungi auto)   distanza: %d    autonomia: %d\n",distanza,autonomia);
+
+
+                //------------------------------------------se non esiste la stazione, non posso aggiungere l'auto----------------------------------------------
+                if(esisteStazione(radice,distanza) == 1){
+                    //-------------------------se supera il limite-----------------------------------------
+                   if(trovaStazione(radice,distanza)->heap_auto->numero_auto < DIMENSIONE_PARCHEGGIO){
+                       int a = trovaStazione(radice,distanza)->heap_auto->numero_auto;
+                       //printf("numero auto stazione %d prima: %d\n",distanza,a);
+                       inserimento(trovaStazione(radice,distanza)->heap_auto,autonomia);
+
+                       int b = trovaStazione(radice,distanza)->heap_auto->numero_auto;
+                       //printf("numero auto stazione %d dopo: %d\n",distanza,b);
+                       if(a < b){
+                           fprintf(file_out,"aggiunta\n");
+                       }
+                       else {
+                           fprintf(file_out,"non aggiunta\n");
+                       }
+                    } else {
+                       fprintf(file_out, "non aggiunta\n");
+                        }
+
+                } else {
+                    printf("stazione %d non esiste\n",distanza);
+                    fprintf(file_out,"non aggiunta\n");
+                }
+
+
             }
         }
 
@@ -154,7 +220,16 @@ int main() {
         }
 
     }
-
+    //todo ---------------------------------------------------stampa AVL-----------------------------------------------------
+    /*
+    printAVL(radice);
+    rimuoviElemento(trovaStazione(radice, 235)->heap_auto,20);
+    printf("---------------------------------------------------------\n");
+    printAVL(radice);
+    */
+    printf("---------------------------------------------------------\n");
+    //printAVL(radice);
+    freeAVL(radice);
     fclose(file);
     fclose(file_out);
 
@@ -162,7 +237,7 @@ int main() {
 }
 
 heap_auto* creazioneHeapAuto(int numero, int* valori){
-
+    //printf("numero di auto richiesto per inserire: %d\n",numero);
     //allocare memoria per la struttura heap iniziale
     heap_auto *heap = (heap_auto*)malloc(sizeof(heap_auto));
 
@@ -173,15 +248,20 @@ heap_auto* creazioneHeapAuto(int numero, int* valori){
     }
     //inizializzo la struttura
     heap-> numero_auto = 0;
-    heap-> capacita = numero;
+    //ma non so se spreca memoria
+    heap-> capacita = DIMENSIONE_PARCHEGGIO;
     //allocare memoria per le auto
-    heap->autonomie = (int*)malloc(numero * sizeof(int));
+    heap->autonomie = (int*)malloc(DIMENSIONE_PARCHEGGIO* sizeof(int));
     //verifico se la memoria è stata allocata correttamente
     if(heap->autonomie == NULL){
         printf("Errore allocazione memoria heap\n");
         return NULL;
     }
     int i;
+    //eventuale problema con variabile numero / DIMENSIONE_PARCHEGGIO
+        //con numero funziona fino a test 5
+        //con DIMENSIONE_PARCHEGGIO lunghezza output strano,numero auto strano,  ma non da errore
+
     for(i = 0; i < numero; i++){
         heap->autonomie[i] = valori[i];
     }
@@ -194,21 +274,7 @@ heap_auto* creazioneHeapAuto(int numero, int* valori){
     return heap;
 }
 
-//funzione che confronta due valori (padre e attuale), se è maggiore l'attuale, allora scambio
-void inserimentoAusiliare(heap_auto* h, int indice){
-    //trova l'indice del padre dell'indice attuale
-    int padre = (indice - 1) / 2;
 
-    if(h->autonomie[padre] < h->autonomie[indice]){
-        //scambio
-        int temp = h->autonomie[padre];
-        h->autonomie[padre] = h->autonomie[indice];
-        h->autonomie[indice] = temp;
-
-        //richiamo la funzione per il padre
-        inserimentoAusiliare(h,padre);
-    }
-}
 
 void maxHeapify(heap_auto* h, int indice){
     //trova l'indice del figlio sinistro e destro
@@ -216,7 +282,6 @@ void maxHeapify(heap_auto* h, int indice){
     int destro = indice * 2 + 2;
     // indice del valore massimo, suppongo che quello attuale sia il massimo
     int max = indice;
-    //fixme ---------------------------------------------------
     //verifico se l'indice del figlio sinistro e destro supera il limite, se supera il limite, allora non esiste, metto -1
     if(sinistro >= h->numero_auto || sinistro <0){
         sinistro = -1;
@@ -314,6 +379,23 @@ void inserimento(heap_auto* h, int data){
 
         //incremento il numero di elementi
         h->numero_auto++;
+    }
+
+}
+//funzione che confronta due valori (padre e attuale), se è maggiore l'attuale, allora scambio
+
+void inserimentoAusiliare(heap_auto* h, int indice){
+    //trova l'indice del padre dell'indice attuale
+    int padre = (indice - 1) / 2;
+
+    if(h->autonomie[padre] < h->autonomie[indice]){
+        //scambio
+        int temp = h->autonomie[padre];
+        h->autonomie[padre] = h->autonomie[indice];
+        h->autonomie[indice] = temp;
+
+        //richiamo la funzione per il padre
+        inserimentoAusiliare(h,padre);
     }
 }
 
@@ -548,3 +630,22 @@ void printAVL(stazione* root){
 
     printAVL(root->destro);
 }
+
+//funzione che verifica se la stazione esiste
+//1 = esiste, 0 = non esiste
+int esisteStazione(stazione* root, int distanza) {
+    if (root == NULL) {
+        return 0;
+    }
+
+    if (distanza < root->distanza) {
+        return esisteStazione(root->sinistro, distanza);
+    } else if (distanza > root->distanza) {
+        return esisteStazione(root->destro, distanza);
+    } else {
+        return 1;  // stazione trovata
+    }
+}
+
+
+//todo quando aggiungo una stazione con numero di auto = 0 , problema per aggiungi auto
