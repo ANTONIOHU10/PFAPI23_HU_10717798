@@ -73,7 +73,7 @@ int main() {
 
 
     //file da leggere
-    FILE *file = fopen("open_107.txt","r");
+    FILE *file = fopen("open_111.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
