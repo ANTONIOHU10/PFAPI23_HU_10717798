@@ -2,30 +2,37 @@
 #include <string.h>
 #include <stdlib.h>
 #define DIMENSIONE_PARCHEGGIO 512
-//struttura per le auto
 
-//struttura per le stazioni, AVL tree
+//struttura per le stazioni, BST
 struct Stazione{
     int distanza; //key
     int numero_auto;
+    int maxAutonomia;
     struct Autonomie* auto_parcheggiate;
     struct Stazione* sinistro;
     struct Stazione* destro;
 
 };
-
+//struttura per le autonomie, BST
 struct Autonomie{
     int autonomia;
     struct Autonomie* sinistro;
     struct Autonomie* destro;
 };
 
+struct Graph {
+    int numeroNodi;
+    int** matriceAdiacenza;
+};
+
+
+typedef struct Graph grafo;
 typedef struct Autonomie autonomie;
 typedef struct Stazione stazione;
 
-stazione* new_node(int x, int y, autonomie* auto_parcheggiate);
+stazione* new_node(int x, int y, autonomie* auto_parcheggiate, int maxAutonomia);
 stazione* search(stazione* root, int x);
-stazione* insert(stazione* root, int x, int y, autonomie* auto_parcheggiate);
+stazione* insert(stazione* root, int x, int y, autonomie* auto_parcheggiate, int maxAutonomia);
 stazione* find_minimum(stazione* root);
 stazione* delete(stazione* root, int x);
 void inorder(stazione* root);
@@ -38,42 +45,34 @@ autonomie* find_minimum_autonomie(autonomie* root);
 autonomie* delete_autonomie(autonomie* root, int x);
 void inorder_autonomie(autonomie* root);
 void freeAutonomie(autonomie* root);
+autonomie* find_maximum_autonomie(autonomie* root);
 
 void decrease_number_auto(stazione* stazione);
 void increase_number_auto(stazione* stazione);
 void print_stazione_with_autonomie(stazione* root);
 autonomie* copyAutonomie(autonomie* root);
+stazione** createListStation(int size);
+void rilasciaGrafo(grafo* grafo);
+
+/*
+lato* createEdge(int destination, int weight);
+grafo* createGraph(int numVertices);
+void addEdge(grafo* graph, int indiceNodo, int destination, int weight);
+void printGraph(grafo* graph);
+void freeGraph(grafo* graph);
+*/
+void inorderTraversalCrescente(stazione* radice, stazione** lista,int* indice);
+void inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice);
+grafo* creaGrafo(stazione** lista, int numeroNodi);
+grafo* creaGrafoDecrescente(stazione** lista, int numeroNodi);
+void stampaMatriceAdiacenza(grafo* grafo);
+
 
 int main() {
-
-    //TODO----------------TEST AVL-------------------------------
     stazione* radice = NULL;
-    /*
-    autonomie* auto_parcheggiate = NULL;
-    autonomie* auto_parcheggiate2 = NULL;
-
-    //TODO   per cancellare i contenuti, devo avere una variabile che riceve il ritorno della funzione di creazione
-    //TODO   e poi passare quella variabile alla funzione di cancellazione , altrimenti non posso cancellare
-    auto_parcheggiate = insert_autonomie(auto_parcheggiate, 1);
-    auto_parcheggiate = insert_autonomie(auto_parcheggiate, 2);
-    auto_parcheggiate = insert_autonomie(auto_parcheggiate, 3);
-
-    radice = insert(radice, 10, 3, auto_parcheggiate);
-    radice = insert(radice, 20, 0, auto_parcheggiate2);
-
-    inorder(radice);
-    printf("\n");
-    inorder_autonomie(auto_parcheggiate);
-    printf("\n");
-    inorder_autonomie(auto_parcheggiate2);
-
-    freeStazione(search(radice,10));
-    */
-    //TODO----------------TEST AVL-------------------------------
-
 
     //file da leggere
-    FILE *file = fopen("open_111.txt","r");
+    FILE *file = fopen("open_100.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -93,10 +92,49 @@ int main() {
     int autonomia;
 
     int autonomie_temp[512];
-    // valore estremo
+
+    //numero di stazioni
+    int numero_stazioni = 0;
+    //todo -------------------------------------test-----------------------------------
+    autonomie* auto_parcheggiate1 = NULL;
+    autonomie* auto_parcheggiate2 = NULL;
+    autonomie* auto_parcheggiate3 = NULL;
+    autonomie* auto_parcheggiate4 = NULL;
+
+    auto_parcheggiate1 = insert_autonomie(auto_parcheggiate1, 10);
+    auto_parcheggiate2 = insert_autonomie(auto_parcheggiate2, 20);
+    auto_parcheggiate3 = insert_autonomie(auto_parcheggiate3, 30);
+    auto_parcheggiate3 = insert_autonomie(auto_parcheggiate4, 30);
+
+
+    radice = insert(radice,20,1,auto_parcheggiate1,25);
+    radice = insert(radice,30,1,auto_parcheggiate2,40);
+    radice = insert(radice,45,1,auto_parcheggiate3,30);
+    radice = insert(radice,50,1,auto_parcheggiate4,25);
+    print_stazione_with_autonomie(radice);
+
+    //todo --------------------------------------- grafo-------------------------------------------
+    int indice=0;
+    stazione** lista = createListStation(4);
+
+    inorderTraversalDecrescente(radice,lista,&indice);
+
+    for(int i=0;i<3;i++){
+        printf("stazione %d, massima autonomia = %d\n",lista[i]->distanza,lista[i]->maxAutonomia);
+    }
+
+    printf("-----------matrice adiacenza----------------\n");
+    grafo* graph = creaGrafo(lista,4);
+    stampaMatriceAdiacenza(graph);
+    rilasciaGrafo(graph);
+
+    free(lista);
+    //todo -------------------------------------test-----------------------------------
+
+
 
     //leggere una riga di comando
-
+    /*
     while (fscanf(file,"%s",operazione) != EOF){
         //printf("---------------------------------------------------------\n");
         //print_stazione_with_autonomie(radice);
@@ -104,11 +142,16 @@ int main() {
 
         if(strcmp(operazione,"aggiungi-stazione") == 0) {
             if(fscanf(file,"%d %d",&distanza, &numero_auto) != EOF){
+                int maxAutonomiaTemp = 0;
                 for (int i = 0; i < numero_auto; i++){
                     if(fscanf(file,"%d",&autonomie_temp[i]) != EOF){
                         //leggo una autonomia
+                        if(autonomie_temp[i] > maxAutonomiaTemp){
+                            maxAutonomiaTemp = autonomie_temp[i];
+                        }
                     }
                 }
+
                 //printf("--->aggiungi stazione %d con %d auto\n",distanza,numero_auto);
                 //se il numero di auto è maggiore di 512 non aggiungo la stazione
                 if(numero_auto>512){
@@ -127,7 +170,10 @@ int main() {
                         for(int i = 0; i < numero_auto; i++){
                             auto_parcheggiate = insert_autonomie(auto_parcheggiate, autonomie_temp[i]);
                         }
-                        radice = insert(radice, distanza, numero_auto, auto_parcheggiate);
+                        radice = insert(radice, distanza, numero_auto, auto_parcheggiate, maxAutonomiaTemp);
+
+                        //aggiorno il numero di stazioni
+                        numero_stazioni++;
                         fprintf(file_out,"aggiunta\n");
                         //printf("\n");
                         //printf("+++ stazione %d aggiunta\n",distanza);
@@ -164,6 +210,9 @@ int main() {
                     //fixme:Attenzione l'autonomia va a sostituire le autonomie di un'altra stazione
                     radice = delete(radice,distanza);
 
+                    //aggiorno il numero di stazioni
+                    numero_stazioni--;
+
                     fprintf(file_out,"demolita\n");
 
                     //printf("\n     le stazioni rimaste sono:\n");
@@ -187,6 +236,10 @@ int main() {
                         //printf("aggiungi-auto  -> aggiunta auto %d alla stazione %d\n",autonomia,distanza);
                         search(radice,distanza)->auto_parcheggiate = insert_autonomie(search(radice,distanza)->auto_parcheggiate, autonomia);
                         increase_number_auto(search(radice,distanza));
+                        //aggiorno la maxAutonomia
+                        if (autonomia>search(radice,distanza)->maxAutonomia){
+                            search(radice,distanza)->maxAutonomia = autonomia;
+                        }
                         fprintf(file_out,"aggiunta\n");
                         //printf("-----------aggiungi auto alla stazione %d-------------------\n",distanza);
                         //printf("\n");
@@ -230,9 +283,17 @@ int main() {
                         } else {
                             //printf("rottama auto -> esiste l'autonomia %d della stazione %d\n",autonomia,distanza);
 
+
                             search(radice,distanza)->auto_parcheggiate=delete_autonomie(search(radice,distanza)->auto_parcheggiate, autonomia);
+
+                            //se l'autonomia da togliere è quella massima, dopo averla tolta, aggiorno la maxAutonomia
+                            if(search(radice,distanza)->maxAutonomia == autonomia){
+                                search(radice,distanza)->maxAutonomia = find_maximum_autonomie(search(radice,distanza)->auto_parcheggiate)->autonomia;
+                            }
                             //decrementare il numero di auto
                             decrease_number_auto(search(radice,distanza));
+                            //aggiorno la maxAutonomia
+
                             fprintf(file_out,"rottamata\n");
                         }
                     } else {
@@ -252,7 +313,7 @@ int main() {
         }
 
     }
-
+    */
     printf("---------------------------------------------------------\n");
 
     //inorder(radice);
@@ -269,12 +330,13 @@ int main() {
 //creazione nodo
 //x  = distanza
 //y = numero auto
-stazione* new_node(int x, int y,autonomie* auto_parcheggiate){
+stazione* new_node(int x, int y,autonomie* auto_parcheggiate, int maxAutonomia){
     stazione* temp;
     temp = malloc(sizeof(stazione));
     temp->distanza = x;
     temp->numero_auto = y;
     temp->auto_parcheggiate = auto_parcheggiate;
+    temp->maxAutonomia = maxAutonomia;
     temp->sinistro = NULL;
     temp->destro = NULL;
 
@@ -293,13 +355,13 @@ stazione* search(stazione* root, int x){
 //x  = distanza
 //y = numero auto
 //inserimento nodo
-stazione* insert(stazione* root, int x, int y, autonomie* auto_parcheggiate){
+stazione* insert(stazione* root, int x, int y, autonomie* auto_parcheggiate,int maxAutonomia){
     if (root == NULL)
-        return new_node(x,y,auto_parcheggiate);
+        return new_node(x,y,auto_parcheggiate,maxAutonomia);
     else if (x > root->distanza)
-        root->destro= insert(root->destro, x,y,auto_parcheggiate);
+        root->destro= insert(root->destro, x,y,auto_parcheggiate,maxAutonomia);
     else
-        root -> sinistro = insert(root->sinistro, x,y,auto_parcheggiate);
+        root -> sinistro = insert(root->sinistro, x,y,auto_parcheggiate,maxAutonomia);
     return root;
 }
 
@@ -310,6 +372,7 @@ stazione* find_minimum(stazione* root) {
         return find_minimum(root->sinistro);
     return root;
 }
+
 
 //todo > devo considerare anche l'albero l'interno di essa
 stazione* delete(stazione* root, int x) {
@@ -425,6 +488,15 @@ autonomie* find_minimum_autonomie(autonomie* root) {
     return root;
 }
 
+autonomie* find_maximum_autonomie(autonomie* root) {
+    if (root == NULL)
+        return NULL;
+    else if (root->destro != NULL)
+        return find_maximum_autonomie(root->destro);
+    return root;
+}
+
+
 autonomie* delete_autonomie(autonomie * root, int x) {
 
     if (root == NULL)
@@ -514,3 +586,164 @@ struct Autonomie* copyAutonomie(struct Autonomie* root) {
     return new_node;
 }
 
+//------------------------------lista di adiacenza--------------------------------------------
+
+//不需要先创建一堆顶点，直接创建边就可以了
+
+/*
+// nuovo lato
+lato* createEdge(int destination, int weight) {
+    lato* newEdge = (lato*)malloc(sizeof(lato));
+    newEdge->destinazione = destination;
+    newEdge->peso = weight;
+    newEdge->next = NULL;
+    return newEdge;
+}
+
+// creazione grafo
+grafo* createGraph(int numVertices) {
+    grafo* graph = (grafo*)malloc(sizeof(grafo));
+    graph->numeroNodi = numVertices;
+
+    // creazione lista
+    graph->array = (lato**)malloc(numVertices * sizeof(lato*));
+    for (int i = 0; i < numVertices; ++i) {
+        graph->array[i] = NULL;
+    }
+
+    return graph;
+}
+
+// aggiungere un lato
+void addEdge(grafo* graph, int indiceNodo, int destination, int weight) {
+    // un nuovo lato
+    lato* newEdge = createEdge(destination, weight);
+
+    // aggiungere il lato alla lista
+    //todo aggiungo il lato alla lista
+    //ma source non è l'indice nel mio caso
+    //utilizzo indiceNodo
+    newEdge->next = graph->array[indiceNodo];
+    graph->array[indiceNodo] = newEdge;
+}
+
+// 释放图的内存
+//todo da provare
+void freeGraph(grafo* graph) {
+    if (graph == NULL) {
+        return;
+    }
+
+    // 释放邻接表中的边
+    for (int i = 0; i < graph->numeroNodi; ++i) {
+        lato* edge = graph->array[i];
+        while (edge != NULL) {
+            lato* temp = edge;
+            edge = edge->next;
+            free(temp);
+        }
+    }
+
+    // 释放邻接表
+    free(graph->array);
+
+    // 释放图
+    free(graph);
+}
+
+// 打印图的邻接表表示
+void printGraph(grafo* graph) {
+    for (int i = 0; i < graph->numeroNodi; ++i) {
+        lato* edge = graph->array[i];
+        printf("顶点 %d 的邻居：", i);
+        while (edge != NULL) {
+            printf("(%d, %d) ", edge->destinazione, edge->peso);
+            edge = edge->next;
+        }
+        printf("\n");
+    }
+}
+*/
+
+// 中序遍历二叉树，将节点按从小到大的顺序放入列表
+void inorderTraversalCrescente(stazione*  radice,  stazione** lista, int* indice) {
+    if (radice == NULL)
+        return;
+
+    inorderTraversalCrescente(radice->sinistro, lista, indice);
+    lista[*indice] = radice;
+    (*indice)++;
+    inorderTraversalCrescente(radice->destro, lista, indice);
+}
+void inorderTraversalDecrescente(stazione*  radice,  stazione** lista, int* indice) {
+    if (radice == NULL)
+        return;
+
+    inorderTraversalDecrescente(radice->destro, lista, indice);
+    lista[*indice] = radice;
+    (*indice)++;
+    inorderTraversalDecrescente(radice->sinistro, lista, indice);
+}
+
+
+stazione**  createListStation(int size){
+    stazione** lista = (struct Stazione**)malloc(size * sizeof(stazione*));
+    return lista;
+}
+
+//--------------------------------------------------------------------------
+
+//creo un grafo con la matrice di adiacenza
+grafo* creaGrafo(stazione** lista, int numeroNodi) {
+    struct Graph* grafo = (struct Graph*)malloc(sizeof(struct Graph));
+    grafo->numeroNodi = numeroNodi;
+    grafo->matriceAdiacenza = (int**)malloc(numeroNodi * sizeof(int*));
+
+    for (int i = 0; i < numeroNodi; i++) {
+        //partenza
+        grafo->matriceAdiacenza[i] = (int*)malloc(numeroNodi * sizeof(int));
+        for (int j = 0; j < numeroNodi; j++) {
+            //peso iniziale
+            grafo->matriceAdiacenza[i][j] = 0;
+        }
+    }
+
+    for (int i = 0; i < numeroNodi - 1; i++) {
+        for (int j = i + 1; j < numeroNodi; j++) {
+
+            //fixme calcolo peso
+            int distanza = abs(lista[i]->distanza - lista[j]->distanza);
+
+            //fixme se l'auto ha l'autonomia sufficiente
+            if (distanza <= lista[i]->maxAutonomia) {
+                //aggiungo il peso
+                grafo->matriceAdiacenza[i][j] = distanza;
+            }
+        }
+    }
+
+    return grafo;
+}
+
+void stampaMatriceAdiacenza(struct Graph* grafo) {
+    int numeroNodi = grafo->numeroNodi;
+
+    printf("相邻矩阵：\n");
+    for (int i = 0; i < numeroNodi; i++) {
+        for (int j = 0; j < numeroNodi; j++) {
+            printf("%d ", grafo->matriceAdiacenza[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void rilasciaGrafo(grafo* grafo) {
+    int numeroNodi = grafo->numeroNodi;
+
+    for (int i = 0; i < numeroNodi; i++) {
+        free(grafo->matriceAdiacenza[i]);
+    }
+
+    free(grafo->matriceAdiacenza);
+    free(grafo);
+}
