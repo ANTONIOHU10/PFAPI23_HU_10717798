@@ -20,13 +20,21 @@ struct Autonomie{
     struct Autonomie* destro;
 };
 
-struct Graph {
-    int numeroNodi;
-    int** matriceAdiacenza;
+//struttura per grafo
+struct AdjListNode {
+    int destinazione;
+    int peso;
+    struct AdjListNode* next;
 };
 
+struct Graph {
+    int numero_stazioni;
+    struct AdjListNode ** adjLists;
+};
 
-typedef struct Graph grafo;
+typedef struct AdjListNode adjListNode;
+typedef struct Graph graph;
+
 typedef struct Autonomie autonomie;
 typedef struct Stazione stazione;
 
@@ -52,27 +60,24 @@ void increase_number_auto(stazione* stazione);
 void print_stazione_with_autonomie(stazione* root);
 autonomie* copyAutonomie(autonomie* root);
 stazione** createListStation(int size);
-void rilasciaGrafo(grafo* grafo);
 
-/*
-lato* createEdge(int destination, int weight);
-grafo* createGraph(int numVertices);
-void addEdge(grafo* graph, int indiceNodo, int destination, int weight);
-void printGraph(grafo* graph);
-void freeGraph(grafo* graph);
-*/
+//lista
 void inorderTraversalCrescente(stazione* radice, stazione** lista,int* indice);
 void inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice);
-grafo* creaGrafo(stazione** lista, int numeroNodi);
-grafo* creaGrafoDecrescente(stazione** lista, int numeroNodi);
-void stampaMatriceAdiacenza(grafo* grafo);
+
+//grafo
+struct AdjListNode* createNode(int dest, int weight);
+struct Graph* createGraph(int numVertices);
+void addEdge(struct Graph* graph, int src, int dest, int weight);
+void printGraph(struct Graph* graph);
+void freeGraph(struct Graph* graph);
 
 
 int main() {
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_100.txt","r");
+    FILE *file = fopen("open_1.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -96,6 +101,7 @@ int main() {
     //numero di stazioni
     int numero_stazioni = 0;
     //todo -------------------------------------test-----------------------------------
+    /*
     autonomie* auto_parcheggiate1 = NULL;
     autonomie* auto_parcheggiate2 = NULL;
     autonomie* auto_parcheggiate3 = NULL;
@@ -104,7 +110,7 @@ int main() {
     auto_parcheggiate1 = insert_autonomie(auto_parcheggiate1, 10);
     auto_parcheggiate2 = insert_autonomie(auto_parcheggiate2, 20);
     auto_parcheggiate3 = insert_autonomie(auto_parcheggiate3, 30);
-    auto_parcheggiate3 = insert_autonomie(auto_parcheggiate4, 30);
+    auto_parcheggiate4 = insert_autonomie(auto_parcheggiate4, 30);
 
 
     radice = insert(radice,20,1,auto_parcheggiate1,25);
@@ -112,29 +118,30 @@ int main() {
     radice = insert(radice,45,1,auto_parcheggiate3,30);
     radice = insert(radice,50,1,auto_parcheggiate4,25);
     print_stazione_with_autonomie(radice);
-
+    */
     //todo --------------------------------------- grafo-------------------------------------------
-    int indice=0;
-    stazione** lista = createListStation(4);
+    int numVertices = 5;
+    struct Graph* graph = createGraph(numVertices);
 
-    inorderTraversalDecrescente(radice,lista,&indice);
+    addEdge(graph, 0, 1, 10);
+    addEdge(graph, 0, 2, 5);
+    addEdge(graph, 1, 2, 1);
+    addEdge(graph, 1, 3, 2);
+    addEdge(graph, 2, 3, 4);
+    addEdge(graph, 3, 4, 3);
+    addEdge(graph, 4, 4, 3);
+    //ho definito che ci sono solo 5 stazioni (quindi 5 partenze, allora non posso aggiungere il sesto)
+    //addEdge(graph, 5, 4, 3);
 
-    for(int i=0;i<3;i++){
-        printf("stazione %d, massima autonomia = %d\n",lista[i]->distanza,lista[i]->maxAutonomia);
-    }
-
-    printf("-----------matrice adiacenza----------------\n");
-    grafo* graph = creaGrafo(lista,4);
-    stampaMatriceAdiacenza(graph);
-    rilasciaGrafo(graph);
-
-    free(lista);
+    printGraph(graph);
+    freeGraph(graph);
+    printf("---------------------------------------------------------\n");
     //todo -------------------------------------test-----------------------------------
 
 
 
     //leggere una riga di comando
-    /*
+
     while (fscanf(file,"%s",operazione) != EOF){
         //printf("---------------------------------------------------------\n");
         //print_stazione_with_autonomie(radice);
@@ -309,11 +316,33 @@ int main() {
             int distanza_destinazione;
             if(fscanf(file,"%d %d",&distanza,&distanza_destinazione) != EOF){
                 fprintf(file_out,"(pianifica percorso)   partenza: %d  destinazione: %d\n",distanza,distanza_destinazione);
+                int indice=0;
+                stazione** lista = createListStation(numero_stazioni);
+                //se la distanza di partenza è minore della distanza di destinazione
+                if(distanza < distanza_destinazione){
+                    inorderTraversalCrescente(radice,lista,&indice);
+                    //se la distanza di partenza è maggiore della distanza di destinazione
+                } else {
+                    inorderTraversalDecrescente(radice,lista,&indice);
+                }
+
+                //todo --------------------------------------------------
+                //stazioneAlbero *radiceAlbero = malloc(sizeof(stazioneAlbero));
+                //radiceAlbero->distanza=distanza;
+                //radiceAlbero->children = (stazioneAlbero**)malloc(sizeof(stazioneAlbero*));
+                printf("lista ordinata:\n");
+                for(int i=0;i<numero_stazioni;i++){
+                    printf("lista[%d] = %d\n",i,lista[i]->distanza);
+                }
+                //buildTree(lista,numero_stazioni,radiceAlbero,distanza_destinazione);
+                //todo --------------------------------------------------
+                free(lista);
+                //freeTree(radiceAlbero);
             }
         }
 
     }
-    */
+
     printf("---------------------------------------------------------\n");
 
     //inorder(radice);
@@ -586,85 +615,6 @@ struct Autonomie* copyAutonomie(struct Autonomie* root) {
     return new_node;
 }
 
-//------------------------------lista di adiacenza--------------------------------------------
-
-//不需要先创建一堆顶点，直接创建边就可以了
-
-/*
-// nuovo lato
-lato* createEdge(int destination, int weight) {
-    lato* newEdge = (lato*)malloc(sizeof(lato));
-    newEdge->destinazione = destination;
-    newEdge->peso = weight;
-    newEdge->next = NULL;
-    return newEdge;
-}
-
-// creazione grafo
-grafo* createGraph(int numVertices) {
-    grafo* graph = (grafo*)malloc(sizeof(grafo));
-    graph->numeroNodi = numVertices;
-
-    // creazione lista
-    graph->array = (lato**)malloc(numVertices * sizeof(lato*));
-    for (int i = 0; i < numVertices; ++i) {
-        graph->array[i] = NULL;
-    }
-
-    return graph;
-}
-
-// aggiungere un lato
-void addEdge(grafo* graph, int indiceNodo, int destination, int weight) {
-    // un nuovo lato
-    lato* newEdge = createEdge(destination, weight);
-
-    // aggiungere il lato alla lista
-    //todo aggiungo il lato alla lista
-    //ma source non è l'indice nel mio caso
-    //utilizzo indiceNodo
-    newEdge->next = graph->array[indiceNodo];
-    graph->array[indiceNodo] = newEdge;
-}
-
-// 释放图的内存
-//todo da provare
-void freeGraph(grafo* graph) {
-    if (graph == NULL) {
-        return;
-    }
-
-    // 释放邻接表中的边
-    for (int i = 0; i < graph->numeroNodi; ++i) {
-        lato* edge = graph->array[i];
-        while (edge != NULL) {
-            lato* temp = edge;
-            edge = edge->next;
-            free(temp);
-        }
-    }
-
-    // 释放邻接表
-    free(graph->array);
-
-    // 释放图
-    free(graph);
-}
-
-// 打印图的邻接表表示
-void printGraph(grafo* graph) {
-    for (int i = 0; i < graph->numeroNodi; ++i) {
-        lato* edge = graph->array[i];
-        printf("顶点 %d 的邻居：", i);
-        while (edge != NULL) {
-            printf("(%d, %d) ", edge->destinazione, edge->peso);
-            edge = edge->next;
-        }
-        printf("\n");
-    }
-}
-*/
-
 // 中序遍历二叉树，将节点按从小到大的顺序放入列表
 void inorderTraversalCrescente(stazione*  radice,  stazione** lista, int* indice) {
     if (radice == NULL)
@@ -691,59 +641,95 @@ stazione**  createListStation(int size){
     return lista;
 }
 
-//--------------------------------------------------------------------------
 
-//creo un grafo con la matrice di adiacenza
-grafo* creaGrafo(stazione** lista, int numeroNodi) {
-    struct Graph* grafo = (struct Graph*)malloc(sizeof(struct Graph));
-    grafo->numeroNodi = numeroNodi;
-    grafo->matriceAdiacenza = (int**)malloc(numeroNodi * sizeof(int*));
+//---------------------------------------lista di adiacenza----------------------------------------------
 
-    for (int i = 0; i < numeroNodi; i++) {
-        //partenza
-        grafo->matriceAdiacenza[i] = (int*)malloc(numeroNodi * sizeof(int));
-        for (int j = 0; j < numeroNodi; j++) {
-            //peso iniziale
-            grafo->matriceAdiacenza[i][j] = 0;
-        }
-    }
-
-    for (int i = 0; i < numeroNodi - 1; i++) {
-        for (int j = i + 1; j < numeroNodi; j++) {
-
-            //fixme calcolo peso
-            int distanza = abs(lista[i]->distanza - lista[j]->distanza);
-
-            //fixme se l'auto ha l'autonomia sufficiente
-            if (distanza <= lista[i]->maxAutonomia) {
-                //aggiungo il peso
-                grafo->matriceAdiacenza[i][j] = distanza;
-            }
-        }
-    }
-
-    return grafo;
+// 创建邻接表节点
+struct AdjListNode* createNode(int dest, int weight) {
+    struct AdjListNode* newNode = (struct AdjListNode*)malloc(sizeof(struct AdjListNode));
+    newNode->destinazione = dest;
+    newNode->peso = weight;
+    newNode->next = NULL;
+    return newNode;
 }
 
-void stampaMatriceAdiacenza(struct Graph* grafo) {
-    int numeroNodi = grafo->numeroNodi;
+// 创建图
+struct Graph* createGraph(int numVertices) {
+    struct Graph* graph = (struct Graph*)malloc(sizeof(struct Graph));
+    graph->numero_stazioni = numVertices;
 
-    printf("相邻矩阵：\n");
-    for (int i = 0; i < numeroNodi; i++) {
-        for (int j = 0; j < numeroNodi; j++) {
-            printf("%d ", grafo->matriceAdiacenza[i][j]);
+    // 创建邻接表数组
+    graph->adjLists = (struct AdjListNode**)malloc(numVertices * sizeof(struct AdjListNode*));
+
+    // 初始化邻接表数组为空
+    //inizializzo i nodi head a NULL
+
+    for (int i = 0; i < numVertices; i++) {
+        graph->adjLists[i] = NULL;
+    }
+
+    return graph;
+}
+
+// 添加边到图中
+//src = indice della stazione di partenza che si trova nel grafo
+// esempio
+/*
+ *   0. stazione 20 ->  dest =30 weight = 10 ->  dest =40 weight = 20
+ *   1. stazione 30 ->  dest =20 weight = 10
+ *   2. stazione 40
+ *
+ * */
+void addEdge(struct Graph* graph, int src, int dest, int weight) {
+    // 创建新的邻接表节点
+    struct AdjListNode* newNode = createNode(dest, weight);
+
+    // 有向图
+    // 将新节点插入到源节点的链表末尾
+    if(graph->adjLists[src] == NULL){
+        graph->adjLists[src] = newNode;
+    } else {
+        //inizializzo un nodo temporaneo, per scorrere
+        //e verifico se è già la fine
+        struct AdjListNode* current = graph->adjLists[src];
+        //scorro fino alla fine
+        while (current->next != NULL){
+            current = current->next;
+        }
+        //aggiungo il nuovo nodo alla fine
+        current->next = newNode;
+    }
+}
+
+// 打印图的邻接表表示
+void printGraph(struct Graph* graph) {
+    int v;
+    for (v = 0; v < graph->numero_stazioni; v++) {
+        struct AdjListNode* current = graph->adjLists[v];
+        printf("partenza %d nodi raggiungibili: ", v);
+        while (current) {
+            printf("%d(%d) ", current->destinazione, current->peso);
+            current = current->next;
         }
         printf("\n");
     }
 }
 
-void rilasciaGrafo(grafo* grafo) {
-    int numeroNodi = grafo->numeroNodi;
-
-    for (int i = 0; i < numeroNodi; i++) {
-        free(grafo->matriceAdiacenza[i]);
+void freeGraph(struct Graph* graph) {
+    if (graph == NULL) {
+        return;
     }
 
-    free(grafo->matriceAdiacenza);
-    free(grafo);
+    int i;
+    for (i = 0; i < graph->numero_stazioni; i++) {
+        struct AdjListNode* current = graph->adjLists[i];
+        while (current != NULL) {
+            struct AdjListNode* temp = current;
+            current = current->next;
+            free(temp);
+        }
+    }
+
+    free(graph->adjLists);
+    free(graph);
 }
