@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define DIMENSIONE_PARCHEGGIO 512
+#include <limits.h>
 
+#define DIMENSIONE_PARCHEGGIO 512
+#define MAXN 200
 //struttura per le stazioni, BST
 struct Stazione{
     int distanza; //key
@@ -20,21 +22,27 @@ struct Autonomie{
     struct Autonomie* destro;
 };
 
-//struttura per grafo
-struct AdjListNode {
-    int destinazione;
-    int peso;
-    struct AdjListNode* next;
-};
-
 struct Graph {
-    int numero_stazioni;
-    struct AdjListNode ** adjLists;
+    int numeroNodi;
+    int** matriceAdiacenza;
 };
 
-typedef struct AdjListNode adjListNode;
-typedef struct Graph graph;
+//------------------------------------ per pianifica percorso
+// 节点结构体
+typedef struct {
+    int index;
+    int steps;
+} Node;
 
+// 队列结构体
+typedef struct {
+    Node* nodes;
+    int front;
+    int rear;
+    int size;
+} Queue;
+
+typedef struct Graph grafo;
 typedef struct Autonomie autonomie;
 typedef struct Stazione stazione;
 
@@ -60,18 +68,14 @@ void increase_number_auto(stazione* stazione);
 void print_stazione_with_autonomie(stazione* root);
 autonomie* copyAutonomie(autonomie* root);
 stazione** createListStation(int size);
+void rilasciaGrafo(grafo* grafo);
 
-//lista
-void inorderTraversalCrescente(stazione* radice, stazione** lista,int* indice);
-void inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice);
+int inorderTraversalCrescente(stazione* radice, stazione** lista,int* indice,int partenza,int destinazione);
+int inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice,int partenza,int destinazione);
 
-//grafo
-struct AdjListNode* createNode(int dest, int weight);
-struct Graph* createGraph(int numVertices);
-void addEdge(struct Graph* graph, int src, int dest, int weight);
-void printGraph(struct Graph* graph);
-void freeGraph(struct Graph* graph);
+//-----------------------------------------------------------
 
+void printPathCrescente(stazione** lista,int numeroStazioni);
 
 int main() {
     stazione* radice = NULL;
@@ -100,45 +104,6 @@ int main() {
 
     //numero di stazioni
     int numero_stazioni = 0;
-    //todo -------------------------------------test-----------------------------------
-    /*
-    autonomie* auto_parcheggiate1 = NULL;
-    autonomie* auto_parcheggiate2 = NULL;
-    autonomie* auto_parcheggiate3 = NULL;
-    autonomie* auto_parcheggiate4 = NULL;
-
-    auto_parcheggiate1 = insert_autonomie(auto_parcheggiate1, 10);
-    auto_parcheggiate2 = insert_autonomie(auto_parcheggiate2, 20);
-    auto_parcheggiate3 = insert_autonomie(auto_parcheggiate3, 30);
-    auto_parcheggiate4 = insert_autonomie(auto_parcheggiate4, 30);
-
-
-    radice = insert(radice,20,1,auto_parcheggiate1,25);
-    radice = insert(radice,30,1,auto_parcheggiate2,40);
-    radice = insert(radice,45,1,auto_parcheggiate3,30);
-    radice = insert(radice,50,1,auto_parcheggiate4,25);
-    print_stazione_with_autonomie(radice);
-    */
-    //todo --------------------------------------- grafo-------------------------------------------
-    int numVertices = 5;
-    struct Graph* graph = createGraph(numVertices);
-
-    addEdge(graph, 0, 1, 10);
-    addEdge(graph, 0, 2, 5);
-    addEdge(graph, 1, 2, 1);
-    addEdge(graph, 1, 3, 2);
-    addEdge(graph, 2, 3, 4);
-    addEdge(graph, 3, 4, 3);
-    addEdge(graph, 4, 4, 3);
-    //ho definito che ci sono solo 5 stazioni (quindi 5 partenze, allora non posso aggiungere il sesto)
-    //addEdge(graph, 5, 4, 3);
-
-    printGraph(graph);
-    freeGraph(graph);
-    printf("---------------------------------------------------------\n");
-    //todo -------------------------------------test-----------------------------------
-
-
 
     //leggere una riga di comando
 
@@ -182,14 +147,7 @@ int main() {
                         //aggiorno il numero di stazioni
                         numero_stazioni++;
                         fprintf(file_out,"aggiunta\n");
-                        //printf("\n");
-                        //printf("+++ stazione %d aggiunta\n",distanza);
-                        //inorder_autonomie(search(radice,distanza)->auto_parcheggiate);
 
-                        //printf("\n     le stazioni  sono:\n");
-                        //inorder(radice);
-                        //printf("\n");
-                        //fprintf(file_out,"(aggiungi stazione)   distanza: %d    numero auto: %d\n",distanza,numero_auto);
                     }
 
                 }
@@ -315,32 +273,39 @@ int main() {
         else if(strcmp(operazione,"pianifica-percorso") == 0) {
             int distanza_destinazione;
             if(fscanf(file,"%d %d",&distanza,&distanza_destinazione) != EOF){
-                fprintf(file_out,"(pianifica percorso)   partenza: %d  destinazione: %d\n",distanza,distanza_destinazione);
+                //printf("--->pianifica percorso %d %d\n",distanza,distanza_destinazione);
+                //fprintf(file_out,"(pianifica percorso)   partenza: %d  destinazione: %d\n",distanza,distanza_destinazione);
+                printf("(pianifica percorso)   partenza: %d  destinazione: %d\n",distanza,distanza_destinazione);
+
+                //todo --------------------------------------------------
+                int numeroStazioniFiltrate;
                 int indice=0;
                 stazione** lista = createListStation(numero_stazioni);
+
                 //se la distanza di partenza è minore della distanza di destinazione
                 if(distanza < distanza_destinazione){
-                    inorderTraversalCrescente(radice,lista,&indice);
+                    numeroStazioniFiltrate = inorderTraversalCrescente(radice,lista,&indice,distanza,distanza_destinazione);
                     //se la distanza di partenza è maggiore della distanza di destinazione
+
+                    printf("ci sono %d stazioni\n",numeroStazioniFiltrate);
+                    for(int i=0 ; i< numeroStazioniFiltrate;i++) {
+                        printf("%d ",lista[i]->distanza);
+                    }
+                    printf("\n\n");
+                    //todo ------------------------------------------------------------------------------------------------------------------------
+                    printPathCrescente(lista,numeroStazioniFiltrate);
+                    //todo -------------------------------------------------------------------------------------------------------------------
                 } else {
-                    inorderTraversalDecrescente(radice,lista,&indice);
+                    numeroStazioniFiltrate = inorderTraversalDecrescente(radice,lista,&indice,distanza_destinazione,distanza_destinazione);
+                    fprintf(file_out,"pianifica percorso caso contrario\n");
                 }
 
-                //todo --------------------------------------------------
-                //stazioneAlbero *radiceAlbero = malloc(sizeof(stazioneAlbero));
-                //radiceAlbero->distanza=distanza;
-                //radiceAlbero->children = (stazioneAlbero**)malloc(sizeof(stazioneAlbero*));
-                printf("lista ordinata:\n");
-                for(int i=0;i<numero_stazioni;i++){
-                    printf("lista[%d] = %d\n",i,lista[i]->distanza);
-                }
-                //buildTree(lista,numero_stazioni,radiceAlbero,distanza_destinazione);
-                //todo --------------------------------------------------
+
                 free(lista);
-                //freeTree(radiceAlbero);
+                //todo --------------------------------------------------
+
             }
         }
-
     }
 
     printf("---------------------------------------------------------\n");
@@ -352,8 +317,6 @@ int main() {
 
     return 0;
 }
-
-
 
 //-----------------------------stazione----------------------------
 //creazione nodo
@@ -411,11 +374,11 @@ stazione* delete(stazione* root, int x) {
     //se il nodo da cancellare è maggiore del nodo corrente
     if (x > root->distanza)
         root->destro = delete(root->destro, x);
-    //se il nodo da cancellare è minore del nodo corrente
+        //se il nodo da cancellare è minore del nodo corrente
     else if (x < root->distanza)
         root->sinistro = delete(root->sinistro, x);
 
-    //se il nodo da cancellare è uguale al nodo corrente
+        //se il nodo da cancellare è uguale al nodo corrente
     else {
         //se il nodo da cancellare è una foglia, non ha figli
         if (root->sinistro == NULL && root->destro == NULL){
@@ -426,7 +389,7 @@ stazione* delete(stazione* root, int x) {
             free(root);
             return NULL;
         }
-        //se il nodo da cancellare ha un solo figlio
+            //se il nodo da cancellare ha un solo figlio
         else if (root->sinistro == NULL || root->destro == NULL){
             stazione* temp;
             if (root->sinistro == NULL)
@@ -442,7 +405,7 @@ stazione* delete(stazione* root, int x) {
             free(root);
             return temp;
         }
-        //se il nodo da cancellare ha due figli
+            //se il nodo da cancellare ha due figli
         else {
             stazione *temp = find_minimum(root->destro);
             root->distanza= temp->distanza;
@@ -615,24 +578,37 @@ struct Autonomie* copyAutonomie(struct Autonomie* root) {
     return new_node;
 }
 
+//------------------------------lista di adiacenza--------------------------------------------
+
 // 中序遍历二叉树，将节点按从小到大的顺序放入列表
-void inorderTraversalCrescente(stazione*  radice,  stazione** lista, int* indice) {
+int inorderTraversalCrescente(stazione*  radice,  stazione** lista, int* indice,int partenza,int destinazione) {
     if (radice == NULL)
-        return;
+        return 0;
+    int count=0;
+    count += inorderTraversalCrescente(radice->sinistro, lista, indice,partenza,destinazione);
+    if(radice->distanza >= partenza && radice->distanza <= destinazione){
+        lista[*indice] = radice;
+        (*indice)++;
+        count++;
+    }
+    count += inorderTraversalCrescente(radice->destro, lista, indice,partenza,destinazione);
 
-    inorderTraversalCrescente(radice->sinistro, lista, indice);
-    lista[*indice] = radice;
-    (*indice)++;
-    inorderTraversalCrescente(radice->destro, lista, indice);
+    return count;
 }
-void inorderTraversalDecrescente(stazione*  radice,  stazione** lista, int* indice) {
+int inorderTraversalDecrescente(stazione*  radice,  stazione** lista, int* indice,int partenza,int destinazione) {
     if (radice == NULL)
-        return;
+        return 0;
 
-    inorderTraversalDecrescente(radice->destro, lista, indice);
-    lista[*indice] = radice;
-    (*indice)++;
-    inorderTraversalDecrescente(radice->sinistro, lista, indice);
+    int count=0;
+    count += inorderTraversalDecrescente(radice->destro, lista, indice,partenza,destinazione);
+    if(radice->distanza <= partenza && radice->distanza >= destinazione){
+        lista[*indice] = radice;
+        (*indice)++;
+        count++;
+    }
+    count += inorderTraversalDecrescente(radice->sinistro, lista, indice,partenza,destinazione);
+
+    return count;
 }
 
 
@@ -640,96 +616,82 @@ stazione**  createListStation(int size){
     stazione** lista = (struct Stazione**)malloc(size * sizeof(stazione*));
     return lista;
 }
+///////////////////////////////////////////////////////////////////////////////
 
+void printPathCrescente(stazione** lista,int numeroStazioni) {
 
-//---------------------------------------lista di adiacenza----------------------------------------------
+    //inizializzare un vettore dinamico
+    int* vettore = (int*)malloc(numeroStazioni * sizeof(int));
 
-// 创建邻接表节点
-struct AdjListNode* createNode(int dest, int weight) {
-    struct AdjListNode* newNode = (struct AdjListNode*)malloc(sizeof(struct AdjListNode));
-    newNode->destinazione = dest;
-    newNode->peso = weight;
-    newNode->next = NULL;
-    return newNode;
-}
+    //inizializzare un vettore dinamico per il path
+    int* path = (int*)malloc(numeroStazioni * sizeof(int));
 
-// 创建图
-struct Graph* createGraph(int numVertices) {
-    struct Graph* graph = (struct Graph*)malloc(sizeof(struct Graph));
-    graph->numero_stazioni = numVertices;
-
-    // 创建邻接表数组
-    graph->adjLists = (struct AdjListNode**)malloc(numVertices * sizeof(struct AdjListNode*));
-
-    // 初始化邻接表数组为空
-    //inizializzo i nodi head a NULL
-
-    for (int i = 0; i < numVertices; i++) {
-        graph->adjLists[i] = NULL;
+    //inizializzare un vettore dinamico con il valore -1
+    for(int i=0;i<numeroStazioni;i++){
+        vettore[i] = INT_MAX;
+        path[i] = INT_MAX;
     }
 
-    return graph;
-}
+    //creazione vettore per le informazioni di percorso
+    for(int i=0;i<=numeroStazioni-1;i++){
 
-// 添加边到图中
-//src = indice della stazione di partenza che si trova nel grafo
-// esempio
-/*
- *   0. stazione 20 ->  dest =30 weight = 10 ->  dest =40 weight = 20
- *   1. stazione 30 ->  dest =20 weight = 10
- *   2. stazione 40
- *
- * */
-void addEdge(struct Graph* graph, int src, int dest, int weight) {
-    // 创建新的邻接表节点
-    struct AdjListNode* newNode = createNode(dest, weight);
-
-    // 有向图
-    // 将新节点插入到源节点的链表末尾
-    if(graph->adjLists[src] == NULL){
-        graph->adjLists[src] = newNode;
-    } else {
-        //inizializzo un nodo temporaneo, per scorrere
-        //e verifico se è già la fine
-        struct AdjListNode* current = graph->adjLists[src];
-        //scorro fino alla fine
-        while (current->next != NULL){
-            current = current->next;
+        //verifico tutte le stazioni raggiungibili dalla stazione i
+        if(i!=numeroStazioni-1){
+            for(int j=i+1; j<=numeroStazioni-1;j++){
+                //se è raggiungibile
+                if(lista[i]->distanza + lista[i]->maxAutonomia >= lista[j]->distanza){
+                    //aggiorno
+                    if(lista[i]->distanza < vettore[j]){
+                        vettore[j] = lista[i]->distanza;
+                    }
+                } else {
+                    //finisco di visitare le stazioni raggiungibili
+                    break;
+                }
+            }
         }
-        //aggiungo il nuovo nodo alla fine
-        current->next = newNode;
-    }
-}
 
-// 打印图的邻接表表示
-void printGraph(struct Graph* graph) {
-    int v;
-    for (v = 0; v < graph->numero_stazioni; v++) {
-        struct AdjListNode* current = graph->adjLists[v];
-        printf("partenza %d nodi raggiungibili: ", v);
-        while (current) {
-            printf("%d(%d) ", current->destinazione, current->peso);
-            current = current->next;
+    }
+    //verifico se la stazione di destinazione è raggiungibile
+    for(int i=1;i<numeroStazioni;i++){
+        if(vettore[i] == INT_MAX){
+            printf("---percorso: IMPOSSIBILE\n\n");
+            free(vettore);
+            free(path);
+            return;
         }
-        printf("\n");
     }
-}
+    printf("---percorso: ");
 
-void freeGraph(struct Graph* graph) {
-    if (graph == NULL) {
-        return;
-    }
+    //partenza
+    int prev = vettore[numeroStazioni-1];
 
-    int i;
-    for (i = 0; i < graph->numero_stazioni; i++) {
-        struct AdjListNode* current = graph->adjLists[i];
-        while (current != NULL) {
-            struct AdjListNode* temp = current;
-            current = current->next;
-            free(temp);
+
+    for(int i=numeroStazioni-1; i>0;i--){
+        //percorso in mezzo
+        //printf("\n---%d ",vettore[i]);
+        //printf("%d  ",prev);
+        if(lista[i]->distanza == prev){
+            //printf("-----> trovo una stazione %d ",lista[i]->distanza);
+            path[i] = lista[i]->distanza;
+            prev= vettore[i];
         }
     }
 
-    free(graph->adjLists);
-    free(graph);
+    printf("\n");
+    //partenza
+    printf("%d ",lista[0]->distanza);
+
+    for(int n=0;n<numeroStazioni;n++){
+        if(path[n] != INT_MAX){
+            printf("%d ",path[n]);
+        }
+    }
+
+    //destinazione
+    printf("%d\n",lista[numeroStazioni-1]->distanza);
+    //libero memoria
+    free(vettore);
+    free(path);
+    return;
 }
