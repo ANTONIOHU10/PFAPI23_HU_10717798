@@ -4,7 +4,8 @@
 #include <limits.h>
 
 #define DIMENSIONE_PARCHEGGIO 512
-#define MAXN 200
+
+
 //struttura per le stazioni, BST
 struct Stazione{
     int distanza; //key
@@ -75,13 +76,14 @@ int inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice,i
 
 //-----------------------------------------------------------
 
-void printPathCrescente(stazione** lista,int numeroStazioni);
+void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out);
+void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out);
 
 int main() {
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_1.txt","r");
+    FILE *file = fopen("open_111.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -293,7 +295,7 @@ int main() {
                     }
                     printf("\n\n");
                     //todo ------------------------------------------------------------------------------------------------------------------------
-                    printPathCrescente(lista,numeroStazioniFiltrate);
+                    printPathCrescente(lista,numeroStazioniFiltrate,file_out);
                     //todo -------------------------------------------------------------------------------------------------------------------
                 } else {
                     numeroStazioniFiltrate = inorderTraversalDecrescente(radice,lista,&indice,distanza_destinazione,distanza_destinazione);
@@ -410,6 +412,7 @@ stazione* delete(stazione* root, int x) {
             stazione *temp = find_minimum(root->destro);
             root->distanza= temp->distanza;
             root->numero_auto = temp->numero_auto;
+            root->maxAutonomia = temp ->maxAutonomia;
             //fixme per prova
             freeAutonomie(root->auto_parcheggiate);
             root->auto_parcheggiate = copyAutonomie(temp->auto_parcheggiate);
@@ -618,7 +621,7 @@ stazione**  createListStation(int size){
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void printPathCrescente(stazione** lista,int numeroStazioni) {
+void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
 
     //inizializzare un vettore dinamico
     int* vettore = (int*)malloc(numeroStazioni * sizeof(int));
@@ -656,6 +659,7 @@ void printPathCrescente(stazione** lista,int numeroStazioni) {
     for(int i=1;i<numeroStazioni;i++){
         if(vettore[i] == INT_MAX){
             printf("---percorso: IMPOSSIBILE\n\n");
+            fprintf(out,"nessun percorso\n");
             free(vettore);
             free(path);
             return;
@@ -681,17 +685,27 @@ void printPathCrescente(stazione** lista,int numeroStazioni) {
     printf("\n");
     //partenza
     printf("%d ",lista[0]->distanza);
+    fprintf(out,"%d ",lista[0]->distanza);
 
     for(int n=0;n<numeroStazioni;n++){
         if(path[n] != INT_MAX){
             printf("%d ",path[n]);
+            fprintf(out,"%d ",path[n]);
         }
     }
 
     //destinazione
     printf("%d\n",lista[numeroStazioni-1]->distanza);
+    fprintf(out,"%d\n",lista[numeroStazioni-1]->distanza);
     //libero memoria
     free(vettore);
     free(path);
     return;
 }
+
+//////////////////////////////////////////////////////////////////////
+
+void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out){
+
+}
+
