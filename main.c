@@ -23,27 +23,6 @@ struct Autonomie{
     struct Autonomie* destro;
 };
 
-struct Graph {
-    int numeroNodi;
-    int** matriceAdiacenza;
-};
-
-//------------------------------------ per pianifica percorso
-// 节点结构体
-typedef struct {
-    int index;
-    int steps;
-} Node;
-
-// 队列结构体
-typedef struct {
-    Node* nodes;
-    int front;
-    int rear;
-    int size;
-} Queue;
-
-typedef struct Graph grafo;
 typedef struct Autonomie autonomie;
 typedef struct Stazione stazione;
 
@@ -69,7 +48,7 @@ void increase_number_auto(stazione* stazione);
 void print_stazione_with_autonomie(stazione* root);
 autonomie* copyAutonomie(autonomie* root);
 stazione** createListStation(int size);
-void rilasciaGrafo(grafo* grafo);
+
 
 int inorderTraversalCrescente(stazione* radice, stazione** lista,int* indice,int partenza,int destinazione);
 int inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice,int partenza,int destinazione);
@@ -83,7 +62,7 @@ int main() {
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_111.txt","r");
+    FILE *file = fopen("open_7.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -289,17 +268,27 @@ int main() {
                     numeroStazioniFiltrate = inorderTraversalCrescente(radice,lista,&indice,distanza,distanza_destinazione);
                     //se la distanza di partenza è maggiore della distanza di destinazione
 
+                    /*
                     printf("ci sono %d stazioni\n",numeroStazioniFiltrate);
                     for(int i=0 ; i< numeroStazioniFiltrate;i++) {
                         printf("%d ",lista[i]->distanza);
                     }
                     printf("\n\n");
+                     */
                     //todo ------------------------------------------------------------------------------------------------------------------------
                     printPathCrescente(lista,numeroStazioniFiltrate,file_out);
                     //todo -------------------------------------------------------------------------------------------------------------------
                 } else {
-                    numeroStazioniFiltrate = inorderTraversalDecrescente(radice,lista,&indice,distanza_destinazione,distanza_destinazione);
-                    fprintf(file_out,"pianifica percorso caso contrario\n");
+                    numeroStazioniFiltrate = inorderTraversalDecrescente(radice,lista,&indice,distanza,distanza_destinazione);
+
+                    printf("ci sono %d stazioni\n",numeroStazioniFiltrate);
+                    for(int i=0 ; i< numeroStazioniFiltrate;i++) {
+                        printf("%d ",lista[i]->distanza);
+                    }
+                    printf("\n\n");
+
+                    //fprintf(file_out,"pianifica percorso caso contrario\n");
+                    printPathDecrescente(lista,numeroStazioniFiltrate,file_out);
                 }
 
 
@@ -629,7 +618,7 @@ void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
     //inizializzare un vettore dinamico per il path
     int* path = (int*)malloc(numeroStazioni * sizeof(int));
 
-    //inizializzare un vettore dinamico con il valore -1
+    //inizializzare un vettore dinamico con il valore di default
     for(int i=0;i<numeroStazioni;i++){
         vettore[i] = INT_MAX;
         path[i] = INT_MAX;
@@ -706,6 +695,99 @@ void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
 //////////////////////////////////////////////////////////////////////
 
 void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out){
+    //printf("---------test 0 -------------------\n");
+    //inizializzare un vettore dinamico
+    int* vettore = (int*)malloc(numeroStazioni * sizeof(int));
 
+    //inizializzare i vettori che valori di default
+    for(int i=0; i<numeroStazioni; i++){
+        vettore[i] = INT_MAX;
+    }
+    //fixme problema di indice
+    //creazione vettore per le informazioni di percorso
+    for(int i=0; i <= numeroStazioni-1; i++){
+
+        //esempio: 60 -> 50 ->40 ?
+
+        int temp =  INT_MAX;
+        //verifico tutte le stazioni raggiungibili dalla stazione i
+        for(int j= i+1; j<= numeroStazioni-1; j++){
+
+
+            //verifico se è raggiungibile
+            if(lista[i]->distanza - lista[i] -> maxAutonomia <= lista[j]->distanza){
+                //printf("stazione %d può raggiungere la stazione %d\n",lista[i]->distanza, lista[j]->distanza);
+                //allora dalla stazione i si può raggiungere alla stazione j
+                //modifico il valore salvato in temp
+                temp = lista[j]->distanza;
+                //----------------------------------- OK  ----------------------------------------------------
+
+                //se la stazione è in grado di raggiungere tutte le stazioni
+                if(j == numeroStazioni-1){
+                    //fixed ho messo vettore[i], funziona
+                    vettore[i] = lista[numeroStazioni-1]->distanza;
+                    break;
+                }
+
+
+            } else {
+                //incontra una stazione non raggiungibile
+
+
+                vettore[i] = temp;
+                break;
+
+            }
+        }
+
+    }
+
+    //controllo il vettore
+    for(int i=0; i<numeroStazioni;i++){
+        //printf(" stazione %d, %d\n",lista[i]->distanza,lista[i]->maxAutonomia);
+    }
+    printf("\n");
+    printf("valori della array: vettore: \n");
+    for(int i=0; i<numeroStazioni;i++){
+        //printf(" stazione %d autonomia = %d (prev %d)\n",lista[i]->distanza,lista[i]->maxAutonomia,vettore[i]);
+    }
+    printf("\n");
+
+    //verifico se esiste il percorso
+    //destinazione ha sempre il valore nel vettore = INT_MAX
+
+    for(int i=0;i<numeroStazioni-1;i++){
+        if(vettore[i] == INT_MAX){
+            printf("---percorso: IMPOSSIBILE\n\n");
+            fprintf(out,"nessun percorso\n");
+            free(vettore);
+            return;
+        }
+    }
+
+    printf("\n---percorso: ");
+
+    //stazione temp per attuale valore prev
+
+    int prevTemp = vettore[0];
+
+    //stampo partenza
+    printf("%d ",lista[0]->distanza);
+    fprintf(out,"%d ",lista[0]->distanza);
+
+    for(int i=0; i<numeroStazioni-1; i++){
+
+        if(lista[i]->distanza == prevTemp){
+            printf("%d ",lista[i]->distanza);
+            fprintf(out,"%d ",lista[i]->distanza);
+            prevTemp = vettore[i];
+        }
+    }
+
+    //stampo destinazione
+    printf("%d\n",lista[numeroStazioni-1]->distanza);
+    fprintf(out,"%d\n",lista[numeroStazioni-1]->distanza);
+
+    free(vettore);
 }
 
