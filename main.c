@@ -4,7 +4,7 @@
 #include <limits.h>
 
 #define DIMENSIONE_PARCHEGGIO 512
-
+//procedimento su Github
 
 //struttura per le stazioni, BST
 struct Stazione{
