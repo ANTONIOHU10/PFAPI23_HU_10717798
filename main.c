@@ -23,6 +23,13 @@ struct Autonomie{
     struct Autonomie* destro;
 };
 
+
+struct Node {
+    int data;
+    struct Node* next;
+};
+
+typedef struct Node node;
 typedef struct Autonomie autonomie;
 typedef struct Stazione stazione;
 
@@ -56,13 +63,21 @@ int inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice,i
 //-----------------------------------------------------------
 
 void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out);
-void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out);
+void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out, node** arrayLista);
+
+//fixme parte di lista per il ritorno
+
+node* createNode(int data);
+void freeArrayWithLists(node** array,int numElements);
+void freeList(node* head);
+node** createArrayWithLists(int numElements);
+
 
 int main() {
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_7.txt","r");
+    FILE *file = fopen("open_110.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -281,16 +296,25 @@ int main() {
                 } else {
                     numeroStazioniFiltrate = inorderTraversalDecrescente(radice,lista,&indice,distanza,distanza_destinazione);
 
+
                     printf("ci sono %d stazioni\n",numeroStazioniFiltrate);
                     for(int i=0 ; i< numeroStazioniFiltrate;i++) {
-                        printf("%d ",lista[i]->distanza);
+                        //printf("%d ",lista[i]->distanza);
+                        //printf("maxAutonomia %d \n",lista[i]->maxAutonomia);
                     }
                     printf("\n\n");
 
-                    //fprintf(file_out,"pianifica percorso caso contrario\n");
-                    printPathDecrescente(lista,numeroStazioniFiltrate,file_out);
-                }
 
+                    //todo -----------------------------      parte di prova     -----------------------------------------------------------
+                    node** array = createArrayWithLists(numeroStazioniFiltrate);
+
+                    freeArrayWithLists(array,numeroStazioniFiltrate);
+
+
+                    //fprintf(file_out,"pianifica percorso caso contrario\n");
+                    //printPathDecrescente(lista,numeroStazioniFiltrate,file_out);
+
+                }
 
                 free(lista);
                 //todo --------------------------------------------------
@@ -689,11 +713,11 @@ void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
     //libero memoria
     free(vettore);
     free(path);
-    return;
+    //return;
 }
 
 //////////////////////////////////////////////////////////////////////
-
+/*
 void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out){
     //printf("---------test 0 -------------------\n");
     //inizializzare un vettore dinamico
@@ -788,6 +812,79 @@ void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out){
     printf("%d\n",lista[numeroStazioni-1]->distanza);
     fprintf(out,"%d\n",lista[numeroStazioni-1]->distanza);
 
+
+    //stampare i valor per confronto
+    printf("informazioni:\n");
+
+    for(int i=0; i<numeroStazioni;i++){
+        printf("%d ",lista[i]->distanza);
+    }
+    printf("\n");
+    for(int i=0;i<numeroStazioni;i++){
+        printf("%d ",vettore[i]);
+    }
+    printf("\n");
+
     free(vettore);
 }
+*/
+//fixme------------------------------------------------------------------------------
 
+// creazione un singolo nodo
+node* createNode(int data) {
+    node* newNode = (node*)malloc(sizeof(node));
+    if (newNode == NULL) {
+        printf("Memory allocation failed!\n");
+        return NULL;
+    }
+    newNode->data = data;
+    newNode->next = NULL;
+    return newNode;
+}
+
+// creazione di un array di lista, quindi ogni stazione avrà una lista di raggiungibilità
+//ritorna questa lista
+/* cioè come
+ * lista 0: 1,2,3,4
+ * lista 1: 2,3,4
+ * lista 2: 3,4
+ * lista 3: 4
+ * */
+node** createArrayWithLists(int numElements) {
+    struct Node** array = (node**)malloc(numElements * sizeof(node*));
+    if (array == NULL) {
+        printf("Memory allocation failed!\n");
+        return NULL;
+    }
+
+    // 初始化数组，使每个元素指向一个空链表
+    for (int i = 0; i < numElements; i++) {
+        array[i] = NULL;
+    }
+
+    return array;
+}
+
+// liberare memoria di una singola lista dell' array
+void freeList(node* head) {
+    while (head != NULL) {
+        struct Node* temp = head;
+        head = head->next;
+        free(temp);
+    }
+}
+
+// liberare memoria di un array di liste
+void freeArrayWithLists(node** array, int numElements) {
+    // liberare tutte le liste nell' array
+    for (int i = 0; i < numElements; i++) {
+        freeList(array[i]);
+    }
+
+    //liberare anche l' array
+    free(array);
+}
+
+void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out,node** arrayLista){
+
+}
