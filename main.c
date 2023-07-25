@@ -70,14 +70,15 @@ void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out, node** 
 node* createNode(int data);
 void freeArrayWithLists(node** array,int numElements);
 void freeList(node* head);
+void headInsert(node** headRef, int data);
 node** createArrayWithLists(int numElements);
-
+void printList(node** list, stazione** listaStazioni, int numero);
 
 int main() {
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_110.txt","r");
+    FILE *file = fopen("open_3.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -307,7 +308,7 @@ int main() {
 
                     //todo -----------------------------      parte di prova     -----------------------------------------------------------
                     node** array = createArrayWithLists(numeroStazioniFiltrate);
-
+                    printPathDecrescente(lista,numeroStazioniFiltrate,file_out,array);
                     freeArrayWithLists(array,numeroStazioniFiltrate);
 
 
@@ -717,8 +718,8 @@ void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
 }
 
 //////////////////////////////////////////////////////////////////////
-/*
-void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out){
+
+void printPathDecrescenteVecchio(stazione** lista,int numeroStazioni,FILE* out){
     //printf("---------test 0 -------------------\n");
     //inizializzare un vettore dinamico
     int* vettore = (int*)malloc(numeroStazioni * sizeof(int));
@@ -827,7 +828,7 @@ void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out){
 
     free(vettore);
 }
-*/
+
 //fixme------------------------------------------------------------------------------
 
 // creazione un singolo nodo
@@ -885,6 +886,95 @@ void freeArrayWithLists(node** array, int numElements) {
     free(array);
 }
 
+// inserimento nodo alla testa
+void headInsert(node** headRef, int data) {
+    node* newNode = createNode(data);
+    if (newNode != NULL) {
+        newNode->next = *headRef;
+        *headRef = newNode;
+    }
+}
+
+// stampa array di lista
+void printList(node** list,stazione** listaStazioni, int numero) {
+
+    for(int i=0;i<numero;i++){
+        printf("Lista %d (stazione %d) :     ",i,listaStazioni[i]->distanza);
+        node* current = list[i];
+        while(current != NULL){
+            printf("%d ",current->data);
+            current = current->next;
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out,node** arrayLista){
 
+    //inizializzare un vettore per salvare il numero di stazioni raggiungibili
+    int* vettoreRaggiungibili = (int*)malloc(numeroStazioni * sizeof(int));
+
+    //inizializzare i vettori che valori di default
+    for(int i=0;i<numeroStazioni;i++){
+        vettoreRaggiungibili[i] = 0;
+    }
+
+    int seEsisteDestinazione = 0;
+
+    //indice per memorizzare la posizione attuale dell'avanzamento
+    int maxTemp = INT_MAX; // non è in relazione con j
+
+
+    //creazione lista per informazioni di percorso
+    for(int i=0; i<=numeroStazioni-1; i++){
+        for(int j=i+1; j<=numeroStazioni-1;j++){
+
+            //se la stazione i raggiunge le stazioni j
+
+            if(lista[i]->distanza - lista[i]->maxAutonomia <= lista[j]->distanza){
+                //printf("stazione %d autonomia %d raggiunge la stazione %d\n",lista[i]->distanza,lista[i]->maxAutonomia,lista[indiceAvanzamento]->distanza);
+                //stazione j raggiungibile
+
+                //todo
+                //aggiungo la stazione j all'inizio della lista nella posizione i
+                if(lista[j]->distanza <= maxTemp){
+                    headInsert(&arrayLista[i],lista[j]->distanza);
+                    vettoreRaggiungibili[i]++;
+                    maxTemp = lista[j]->distanza;
+
+                    //almeno una volta trovata la destinazione
+                    if(lista[j]->distanza == lista[numeroStazioni-1]->distanza){
+                        seEsisteDestinazione = 1;
+                    }
+
+                }
+                //todo se non aggiungo la stazione
+
+            } else {
+                break;
+            }
+
+        }
+    }
+    //controllo il array lista se esiste almeno una volta la destinazione, altrimenti non è raggiungibile
+    if(seEsisteDestinazione == 0){
+        printf("---percorso: IMPOSSIBILE\n\n");
+        fprintf(out,"nessun percorso\n");
+        free(vettoreRaggiungibili);
+        return;
+    }
+
+    //fixme, ma esiste il caso in cui alcune stazioni raggiungono la destinazione, ma non aggiungono la stazione che aggiunge la destinazione
+    //da verificare se esiste questo caso
+
+
+    //eliminare le stazioni non raggiungibili nella lista
+
+
+
+    //trovare il percorso
+
+    //printList(arrayLista,lista,numeroStazioni);
+    free(vettoreRaggiungibili);
 }
