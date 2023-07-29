@@ -23,12 +23,28 @@ struct Autonomie{
     struct Autonomie* destro;
 };
 
-
-struct Node {
+struct Node
+{
+    //fixme
+    int step;
     int data;
-    struct Node* next;
-};
+    int autonomia;
+    //per albero
+    struct Node *parent;
+    struct Node *firstChild;
+    struct Node *nextSibling;
 
+    //voce che serve per Queue
+    struct Node *next;
+} ;
+
+struct Queue
+{
+    struct Node *front; // il primo elemento
+    struct Node *back; // ultimo elemento
+} ;
+
+typedef struct Queue queue;
 typedef struct Node node;
 typedef struct Autonomie autonomie;
 typedef struct Stazione stazione;
@@ -63,22 +79,34 @@ int inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice,i
 //-----------------------------------------------------------
 
 void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out);
-void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out, node** arrayLista);
 
 //fixme parte di lista per il ritorno
+node* createNewNode(int data,int autonomia,int step);
+void addChild(node* parent,node* newChild);
+void printNode(node* root,int depth);
+void printPathToRoot(node *node);
+void freeTree(node* root);
 
-node* createNode(int data);
-void freeArrayWithLists(node** array,int numElements);
-void freeList(node* head);
-void headInsert(node** headRef, int data);
-node** createArrayWithLists(int numElements);
-void printList(node** list, stazione** listaStazioni, int numero);
+//------------------------------------------queue
+queue* createQueue();
+void enqueue(queue* queue,node* newNode);
+node* dequeue(queue* queue);
+int isEmpty(queue* queue);
+void freeQueue(queue* queue);
+void printQueue(queue* queue);
+void sortQueue(queue* queue);
+void BFS();
+
+void printDecrescente(stazione** lista,int numeroStazioni,FILE* out);
+
+void sortQueueVer2(queue* queue);
+void printPathToRootToFile(node *node,FILE* out);
 
 int main() {
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_3.txt","r");
+    FILE *file = fopen("open_108.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -297,24 +325,22 @@ int main() {
                 } else {
                     numeroStazioniFiltrate = inorderTraversalDecrescente(radice,lista,&indice,distanza,distanza_destinazione);
 
-
+                    /*
+                    printf("---------------------  INVERSO ---------------------\n\n");
                     printf("ci sono %d stazioni\n",numeroStazioniFiltrate);
                     for(int i=0 ; i< numeroStazioniFiltrate;i++) {
                         //printf("%d ",lista[i]->distanza);
-                        //printf("maxAutonomia %d \n",lista[i]->maxAutonomia);
                     }
-                    printf("\n\n");
+                    printf("\n++++++++++++++++++++AUTONOMIE ++++++++++++++++++++\n");
+                    for(int i=0; i<numeroStazioniFiltrate;i++){
+                        //printf("%d ",lista[i]->maxAutonomia);
+                    }*/
+                    //printf("\n\n\n\n");
 
-
-                    //todo -----------------------------      parte di prova     -----------------------------------------------------------
-                    node** array = createArrayWithLists(numeroStazioniFiltrate);
-                    printPathDecrescente(lista,numeroStazioniFiltrate,file_out,array);
-                    freeArrayWithLists(array,numeroStazioniFiltrate);
-
-
+                    printDecrescente(lista,numeroStazioniFiltrate,file_out);
                     //fprintf(file_out,"pianifica percorso caso contrario\n");
                     //printPathDecrescente(lista,numeroStazioniFiltrate,file_out);
-
+                    //BFS();
                 }
 
                 free(lista);
@@ -719,262 +745,393 @@ void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
 
 //////////////////////////////////////////////////////////////////////
 
-void printPathDecrescenteVecchio(stazione** lista,int numeroStazioni,FILE* out){
-    //printf("---------test 0 -------------------\n");
-    //inizializzare un vettore dinamico
-    int* vettore = (int*)malloc(numeroStazioni * sizeof(int));
-
-    //inizializzare i vettori che valori di default
-    for(int i=0; i<numeroStazioni; i++){
-        vettore[i] = INT_MAX;
-    }
-    //fixme problema di indice
-    //creazione vettore per le informazioni di percorso
-    for(int i=0; i <= numeroStazioni-1; i++){
-
-        //esempio: 60 -> 50 ->40 ?
-
-        int temp =  INT_MAX;
-        //verifico tutte le stazioni raggiungibili dalla stazione i
-        for(int j= i+1; j<= numeroStazioni-1; j++){
-
-
-            //verifico se è raggiungibile
-            if(lista[i]->distanza - lista[i] -> maxAutonomia <= lista[j]->distanza){
-                //printf("stazione %d può raggiungere la stazione %d\n",lista[i]->distanza, lista[j]->distanza);
-                //allora dalla stazione i si può raggiungere alla stazione j
-                //modifico il valore salvato in temp
-                temp = lista[j]->distanza;
-                //----------------------------------- OK  ----------------------------------------------------
-
-                //se la stazione è in grado di raggiungere tutte le stazioni
-                if(j == numeroStazioni-1){
-                    //fixed ho messo vettore[i], funziona
-                    vettore[i] = lista[numeroStazioni-1]->distanza;
-                    break;
-                }
-
-
-            } else {
-                //incontra una stazione non raggiungibile
-
-
-                vettore[i] = temp;
-                break;
-
-            }
-        }
-
-    }
-
-    //controllo il vettore
-    for(int i=0; i<numeroStazioni;i++){
-        //printf(" stazione %d, %d\n",lista[i]->distanza,lista[i]->maxAutonomia);
-    }
-    printf("\n");
-    printf("valori della array: vettore: \n");
-    for(int i=0; i<numeroStazioni;i++){
-        //printf(" stazione %d autonomia = %d (prev %d)\n",lista[i]->distanza,lista[i]->maxAutonomia,vettore[i]);
-    }
-    printf("\n");
-
-    //verifico se esiste il percorso
-    //destinazione ha sempre il valore nel vettore = INT_MAX
-
-    for(int i=0;i<numeroStazioni-1;i++){
-        if(vettore[i] == INT_MAX){
-            printf("---percorso: IMPOSSIBILE\n\n");
-            fprintf(out,"nessun percorso\n");
-            free(vettore);
-            return;
-        }
-    }
-
-    printf("\n---percorso: ");
-
-    //stazione temp per attuale valore prev
-
-    int prevTemp = vettore[0];
-
-    //stampo partenza
-    printf("%d ",lista[0]->distanza);
-    fprintf(out,"%d ",lista[0]->distanza);
-
-    for(int i=0; i<numeroStazioni-1; i++){
-
-        if(lista[i]->distanza == prevTemp){
-            printf("%d ",lista[i]->distanza);
-            fprintf(out,"%d ",lista[i]->distanza);
-            prevTemp = vettore[i];
-        }
-    }
-
-    //stampo destinazione
-    printf("%d\n",lista[numeroStazioni-1]->distanza);
-    fprintf(out,"%d\n",lista[numeroStazioni-1]->distanza);
-
-
-    //stampare i valor per confronto
-    printf("informazioni:\n");
-
-    for(int i=0; i<numeroStazioni;i++){
-        printf("%d ",lista[i]->distanza);
-    }
-    printf("\n");
-    for(int i=0;i<numeroStazioni;i++){
-        printf("%d ",vettore[i]);
-    }
-    printf("\n");
-
-    free(vettore);
-}
 
 //fixme------------------------------------------------------------------------------
-
-// creazione un singolo nodo
-node* createNode(int data) {
-    node* newNode = (node*)malloc(sizeof(node));
-    if (newNode == NULL) {
-        printf("Memory allocation failed!\n");
-        return NULL;
-    }
+//------------------------------------------------TREE-----------------------------------------------
+//creazione di un nodo
+node *createNewNode(int data,int autonomia,int step)
+{
+    node *newNode = (node *)malloc(sizeof(node));
     newNode->data = data;
+    newNode->step = step;
+    newNode->autonomia = autonomia;
+    newNode->parent = NULL;
+    newNode->firstChild = NULL;
+    newNode->nextSibling = NULL;
     newNode->next = NULL;
     return newNode;
 }
 
-// creazione di un array di lista, quindi ogni stazione avrà una lista di raggiungibilità
-//ritorna questa lista
-/* cioè come
- * lista 0: 1,2,3,4
- * lista 1: 2,3,4
- * lista 2: 3,4
- * lista 3: 4
- * */
-node** createArrayWithLists(int numElements) {
-    struct Node** array = (node**)malloc(numElements * sizeof(node*));
-    if (array == NULL) {
-        printf("Memory allocation failed!\n");
-        return NULL;
+//aggiungere un nodo come figlio al padre
+void addChild(node *parent, node *newChild)
+{
+    //assegna indirizzo del padre al figlio
+    newChild->parent = parent;
+
+    //se il padre non aveva figlio -> allora questo nodo diventa il suo primo figlio
+    if (parent->firstChild == NULL)
+    {
+        parent->firstChild = newChild;
     }
-
-    // 初始化数组，使每个元素指向一个空链表
-    for (int i = 0; i < numElements; i++) {
-        array[i] = NULL;
-    }
-
-    return array;
-}
-
-// liberare memoria di una singola lista dell' array
-void freeList(node* head) {
-    while (head != NULL) {
-        struct Node* temp = head;
-        head = head->next;
-        free(temp);
-    }
-}
-
-// liberare memoria di un array di liste
-void freeArrayWithLists(node** array, int numElements) {
-    // liberare tutte le liste nell' array
-    for (int i = 0; i < numElements; i++) {
-        freeList(array[i]);
-    }
-
-    //liberare anche l' array
-    free(array);
-}
-
-// inserimento nodo alla testa
-void headInsert(node** headRef, int data) {
-    node* newNode = createNode(data);
-    if (newNode != NULL) {
-        newNode->next = *headRef;
-        *headRef = newNode;
-    }
-}
-
-// stampa array di lista
-void printList(node** list,stazione** listaStazioni, int numero) {
-
-    for(int i=0;i<numero;i++){
-        printf("Lista %d (stazione %d) :     ",i,listaStazioni[i]->distanza);
-        node* current = list[i];
-        while(current != NULL){
-            printf("%d ",current->data);
-            current = current->next;
+    //se il padre aveva altri figli -> allora questo nodo andrà in fondo
+    else
+    {
+        node *sibling = parent->firstChild;
+        while (sibling->nextSibling != NULL)
+        {
+            sibling = sibling->nextSibling;
         }
-        printf("\n");
+        //il nuovo nodo diventa ultimo figlio
+        sibling->nextSibling = newChild;
     }
-    printf("\n");
 }
 
-void printPathDecrescente(stazione** lista,int numeroStazioni,FILE* out,node** arrayLista){
-
-    //inizializzare un vettore per salvare il numero di stazioni raggiungibili
-    int* vettoreRaggiungibili = (int*)malloc(numeroStazioni * sizeof(int));
-
-    //inizializzare i vettori che valori di default
-    for(int i=0;i<numeroStazioni;i++){
-        vettoreRaggiungibili[i] = 0;
+//BFS print
+void printNode(node *root, int depth)
+{
+    for(int i = 0; i < depth; i++){
+        printf("  ");
     }
 
-    int seEsisteDestinazione = 0;
+    printf("%d\n", root->data);
 
-    //indice per memorizzare la posizione attuale dell'avanzamento
-    int maxTemp = INT_MAX; // non è in relazione con j
+    //se ha il figlio
+    if(root->firstChild != NULL)
+        printNode(root->firstChild, depth + 1);
 
+    //se ha dei nodi vicini
+    if(root->nextSibling != NULL)
+        printNode(root->nextSibling, depth);
+}
 
-    //creazione lista per informazioni di percorso
-    for(int i=0; i<=numeroStazioni-1; i++){
-        for(int j=i+1; j<=numeroStazioni-1;j++){
-
-            //se la stazione i raggiunge le stazioni j
-
-            if(lista[i]->distanza - lista[i]->maxAutonomia <= lista[j]->distanza){
-                //printf("stazione %d autonomia %d raggiunge la stazione %d\n",lista[i]->distanza,lista[i]->maxAutonomia,lista[indiceAvanzamento]->distanza);
-                //stazione j raggiungibile
-
-                //todo
-                //aggiungo la stazione j all'inizio della lista nella posizione i
-                if(lista[j]->distanza <= maxTemp){
-                    headInsert(&arrayLista[i],lista[j]->distanza);
-                    vettoreRaggiungibili[i]++;
-                    maxTemp = lista[j]->distanza;
-
-                    //almeno una volta trovata la destinazione
-                    if(lista[j]->distanza == lista[numeroStazioni-1]->distanza){
-                        seEsisteDestinazione = 1;
-                    }
-
-                }
-                //todo se non aggiungo la stazione
-
-            } else {
-                break;
-            }
-
-        }
+// print path from a node to root
+void printPathToRoot(node *node)
+{
+    if(node->parent == NULL) // If root node
+    {
+        printf("%d", node->data);
     }
-    //controllo il array lista se esiste almeno una volta la destinazione, altrimenti non è raggiungibile
-    if(seEsisteDestinazione == 0){
-        printf("---percorso: IMPOSSIBILE\n\n");
-        fprintf(out,"nessun percorso\n");
-        free(vettoreRaggiungibili);
+    else
+    {
+        printPathToRoot(node->parent);
+        printf(" -> %d", node->data);
+    }
+}
+
+void freeTree(node *root)
+{
+    //se l'albero è vuoto
+    if(root== NULL)
+    {
         return;
     }
 
-    //fixme, ma esiste il caso in cui alcune stazioni raggiungono la destinazione, ma non aggiungono la stazione che aggiunge la destinazione
-    //da verificare se esiste questo caso
+    node* currentChild = root->firstChild;
+    while(currentChild != NULL) // stampa tutti i figli
+    {
+        node *nextChild = currentChild->nextSibling;
+        freeTree(currentChild);
+        currentChild = nextChild;
+    }
 
-
-    //eliminare le stazioni non raggiungibili nella lista
-
-
-
-    //trovare il percorso
-
-    //printList(arrayLista,lista,numeroStazioni);
-    free(vettoreRaggiungibili);
+    free(root); // 最后释放节点本身
 }
+
+
+//--------------------------------------------- QUEUE--------------------------------------------------
+// creazione di una queue
+queue *createQueue()
+{
+    queue* newQueue = (queue *)malloc(sizeof(queue));
+    newQueue->front = NULL;
+    newQueue->back = NULL;
+    return newQueue;
+}
+
+// aggiungere un nodo alla queue
+void enqueue(queue *queue, node *newNode)
+{
+    // se la queue è inizialmente vuota, metto il nuovo nodo come l'unico nodo
+    if (queue->back == NULL)
+    {
+        queue->front = newNode;
+        queue->back = newNode;
+    }
+
+// aggiungo il nodo come ultimo
+    else
+    {
+        queue->back->next = newNode;
+        queue->back = newNode;
+    }
+}
+
+// cancellare un nodo dalla queue, e ottenere il nodo
+node *dequeue(queue *queue)
+{
+    //se non ci sono nodi nella queue
+    if (queue->front == NULL)
+    {
+        return NULL;
+    }
+
+    //altrimenti togliere il primo nodo, e il secondo nodo diventa il primo nodo
+    node *node = queue->front;
+    queue->front = node->next;
+
+    if (queue->front == NULL)
+    {
+        queue->back = NULL;
+    }
+
+    node->next = NULL;
+    return node;
+}
+
+// se la queue è vuota
+int isEmpty(queue *queue)
+{
+    return queue->front == NULL;
+}
+
+// liberare la queue
+void freeQueue(queue *queue)
+{
+    while (!isEmpty(queue))
+    {
+        node *node = dequeue(queue);
+        free(node);
+    }
+    free(queue);
+}
+
+void printQueue(queue* queue)
+{
+    node* temp = queue->front;
+
+    // 遍历整个队列并打印每个节点的数据
+    while (temp != NULL)
+    {
+        printf("%d (step = %d) ", temp->data,temp->step);
+        temp = temp->next;
+    }
+
+    printf("\n");
+}
+
+void sortQueue(queue* queue)
+{
+    // 边界情况：空队列或只有一个元素的队列已经是有序的
+    if (queue->front == NULL || queue->front->next == NULL)
+    {
+        return;
+    }
+
+    node *sorted = NULL;  // 已排序部分的头结点
+    node *current = queue->front; // 当前节点
+
+    while (current != NULL)
+    {
+        node *nextNode = current->next;  // 记录下一个节点
+
+        // 将 current 节点插入到 sorted 链表的正确位置
+        if (sorted == NULL || current->data < sorted->data)
+        {
+            // current 节点应该被插入到 sorted 链表的前面
+            current->next = sorted;
+            sorted = current;
+        }
+        else
+        {
+            // current 节点应该被插入到 sorted 链表的中间位置
+            node *sortedCurr = sorted;
+            while (sortedCurr->next != NULL && sortedCurr->next->data < current->data)
+            {
+                sortedCurr = sortedCurr->next;
+            }
+            current->next = sortedCurr->next;
+            sortedCurr->next = current;
+        }
+
+        // 继续处理下一个节点
+        current = nextNode;
+    }
+
+    // 更新队列的 front 和 back 指针
+    queue->front = sorted;
+    node *tempNode = sorted;
+    while (tempNode->next != NULL)
+    {
+        tempNode = tempNode->next;
+    }
+    queue->back = tempNode;
+}
+
+void printPathToRootToFile(node *node,FILE* out)
+{
+    if(node->parent == NULL) // If root node
+    {
+        fprintf(out,"%d", node->data);
+    }
+    else
+    {
+        printPathToRootToFile(node->parent,out);
+        fprintf(out," %d", node->data);
+    }
+}
+
+//todo prova
+void BFS (){
+    printf("\n\n----------------------------------\n");
+
+    queue* queue = createQueue();
+    node* node1= createNewNode(1,0,1);
+    node* node2= createNewNode(1,0,0);
+    node* node3= createNewNode(2,0,1);
+    node* node4= createNewNode(2,0,2);
+    node* node5= createNewNode(2,0,0);
+    enqueue(queue,node1);
+    enqueue(queue,node2);
+    enqueue(queue,node3);
+    enqueue(queue,node4);
+    enqueue(queue,node5);
+
+    printQueue(queue);
+    printf("----after sort---------\n");
+
+    sortQueueVer2(queue);
+
+    printQueue(queue);
+    freeQueue(queue);
+
+}
+
+void printDecrescente(stazione** lista,int numeroStazioni,FILE* out){
+
+    //creare una queue
+    queue* queue = createQueue();
+
+    //creare un nodo root
+    node* root = createNewNode(lista[0]->distanza, lista[0]->maxAutonomia,0);
+
+    //aggiungere il nodo root alla queue
+    enqueue(queue, root);
+
+    //array per segnare che la stazione è stata visitata
+    int* visitato = (int*)malloc(sizeof(int)*numeroStazioni);
+
+    //inizializzazione
+    for(int i = 0; i < numeroStazioni; i++){
+        visitato[i] = 0;
+    }
+
+    node* nodeFinal = NULL;
+
+    //quando la queue non è vuota
+    while(queue->front != NULL){
+        node* nodeTemp = dequeue(queue);
+
+        if(nodeTemp->data == lista[numeroStazioni-1]->distanza){
+            nodeFinal = nodeTemp;
+            break;
+        }
+
+        for(int i = numeroStazioni-1; i > 0; i--){
+
+            //se la stazione è la stazione di partenza, fine scorrimento
+            if(nodeTemp->data == lista[i]->distanza){
+                break;
+            }
+            else {
+
+                //se la stazione è raggiungibile dalla stazione node ottenuto dalla queue
+                if(nodeTemp->data - nodeTemp->autonomia <= lista[i]->distanza && visitato[i] == 0){
+
+                    //il nuovo nodo
+                    node* nodeAdd = createNewNode(lista[i]->distanza, lista[i]->maxAutonomia,nodeTemp->step+1);
+
+                    //aggiungere il nodo alla queue e all'albero
+                    enqueue(queue, nodeAdd);
+                    //fixme
+                    addChild(nodeTemp, nodeAdd);
+                    visitato[i] = 1;
+                    //printf("aggiunto un nodo\n");
+                }
+            }
+
+        }
+
+        sortQueueVer2(queue);
+
+        //printQueue(queue);
+        //printf("\n\n");
+    }
+
+    if(nodeFinal == NULL){
+        printf("NESSUN PERCORSO\n");
+        fprintf(out,"nessun percorso\n");
+        free(visitato);
+        freeTree(root);
+        free(queue);
+        return;
+    }
+
+    //printPathToRoot(nodeFinal);
+    printPathToRootToFile(nodeFinal,out);
+    fprintf(out,"\n");
+    printf("\n");
+    free(visitato);
+    freeTree(root);
+    free(queue);
+    //se usavo freeQueue(queue) mi dava errore, perché i nodi sono stati già deallocati con freeTree(root)
+};
+
+
+void sortQueueVer2(queue* queue)
+{
+    // 边界情况：空队列或只有一个元素的队列已经是有序的
+    if (queue->front == NULL || queue->front->next == NULL)
+    {
+        return;
+    }
+
+    node *sorted = NULL;  // 已排序部分的头结点
+    node *current = queue->front; // 当前节点
+
+    while (current != NULL)
+    {
+        node *nextNode = current->next;  // 记录下一个节点
+
+        // 将 current 节点插入到 sorted 链表的正确位置
+        if (sorted == NULL || current->step < sorted->step || (current->step == sorted->step && current->data < sorted->data))
+        {
+            // current 节点应该被插入到 sorted 链表的前面
+            current->next = sorted;
+            sorted = current;
+        }
+        else
+        {
+            // current 节点应该被插入到 sorted 链表的中间位置
+            node *sortedCurr = sorted;
+            while (sortedCurr->next != NULL && (current->step > sortedCurr->next->step || (current->step == sortedCurr->next->step && current->data > sortedCurr->next->data)))
+            {
+                sortedCurr = sortedCurr->next;
+            }
+            current->next = sortedCurr->next;
+            sortedCurr->next = current;
+        }
+
+        // 继续处理下一个节点
+        current = nextNode;
+    }
+
+    // 更新队列的 front 和 back 指针
+    queue->front = sorted;
+    node *tempNode = sorted;
+    while (tempNode->next != NULL)
+    {
+        tempNode = tempNode->next;
+    }
+    queue->back = tempNode;
+}
+
