@@ -27,6 +27,7 @@ struct Node
 {
     //fixme
     int step;
+    int index;
     int data;
     int autonomia;
     //per albero
@@ -81,7 +82,7 @@ int inorderTraversalDecrescente(stazione* radice, stazione** lista,int* indice,i
 void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out);
 
 //fixme parte di lista per il ritorno
-node* createNewNode(int data,int autonomia,int step);
+node* createNewNode(int data,int autonomia,int step,int index);
 void addChild(node* parent,node* newChild);
 void printNode(node* root,int depth);
 void printPathToRoot(node *node);
@@ -102,11 +103,17 @@ void printDecrescente(stazione** lista,int numeroStazioni,FILE* out);
 void sortQueueVer2(queue* queue);
 void printPathToRootToFile(node *node,FILE* out);
 
+//-----------------------------------------------------------
+void splitList(node* head,node** firstHalf,node** secondHalf);
+node* mergeList(node* a,node* b);
+void mergeSort(node** headRef);
+void sortQueueVer3(queue* queue);
+
 int main() {
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_108.txt","r");
+    FILE *file = fopen("open_100.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -121,9 +128,9 @@ int main() {
     }
     //dichiarazione per lettura
     char operazione[20];
-    int distanza;
-    int numero_auto;
-    int autonomia;
+    int distanza=0;
+    int numero_auto=0;
+    int autonomia=0;
 
     int autonomie_temp[512];
 
@@ -273,9 +280,9 @@ int main() {
                         } else {
                             //printf("rottama auto -> esiste l'autonomia %d della stazione %d\n",autonomia,distanza);
 
-
+                            //fixme problema con delete_autonomie !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             search(radice,distanza)->auto_parcheggiate=delete_autonomie(search(radice,distanza)->auto_parcheggiate, autonomia);
-
+                            //找到站点【获取站点的车辆们】 =删除站点【寻找到站点 获取要删除站点车辆们，传入要删除的某一车辆】
                             //se l'autonomia da togliere è quella massima, dopo averla tolta, aggiorno la maxAutonomia
                             if(search(radice,distanza)->maxAutonomia == autonomia){
                                 search(radice,distanza)->maxAutonomia = find_maximum_autonomie(search(radice,distanza)->auto_parcheggiate)->autonomia;
@@ -546,7 +553,7 @@ autonomie* delete_autonomie(autonomie * root, int x) {
             return NULL;
         }
         else if (root->sinistro == NULL || root->destro == NULL){
-            autonomie *temp;
+            autonomie *temp = NULL;
             if (root->sinistro == NULL)
                 temp = root->destro;
             else
@@ -749,11 +756,12 @@ void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
 //fixme------------------------------------------------------------------------------
 //------------------------------------------------TREE-----------------------------------------------
 //creazione di un nodo
-node *createNewNode(int data,int autonomia,int step)
+node *createNewNode(int data,int autonomia,int step,int index)
 {
     node *newNode = (node *)malloc(sizeof(node));
     newNode->data = data;
     newNode->step = step;
+    newNode->index = index;
     newNode->autonomia = autonomia;
     newNode->parent = NULL;
     newNode->firstChild = NULL;
@@ -773,7 +781,7 @@ void addChild(node *parent, node *newChild)
     {
         parent->firstChild = newChild;
     }
-    //se il padre aveva altri figli -> allora questo nodo andrà in fondo
+        //se il padre aveva altri figli -> allora questo nodo andrà in fondo
     else
     {
         node *sibling = parent->firstChild;
@@ -985,11 +993,11 @@ void BFS (){
     printf("\n\n----------------------------------\n");
 
     queue* queue = createQueue();
-    node* node1= createNewNode(1,0,1);
-    node* node2= createNewNode(1,0,0);
-    node* node3= createNewNode(2,0,1);
-    node* node4= createNewNode(2,0,2);
-    node* node5= createNewNode(2,0,0);
+    node* node1= createNewNode(1,0,1,0);
+    node* node2= createNewNode(1,0,0,0);
+    node* node3= createNewNode(2,0,1,0);
+    node* node4= createNewNode(2,0,2,0);
+    node* node5= createNewNode(2,0,0,0);
     enqueue(queue,node1);
     enqueue(queue,node2);
     enqueue(queue,node3);
@@ -1012,7 +1020,7 @@ void printDecrescente(stazione** lista,int numeroStazioni,FILE* out){
     queue* queue = createQueue();
 
     //creare un nodo root
-    node* root = createNewNode(lista[0]->distanza, lista[0]->maxAutonomia,0);
+    node* root = createNewNode(lista[0]->distanza, lista[0]->maxAutonomia,0,0);
 
     //aggiungere il nodo root alla queue
     enqueue(queue, root);
@@ -1035,11 +1043,14 @@ void printDecrescente(stazione** lista,int numeroStazioni,FILE* out){
             nodeFinal = nodeTemp;
             break;
         }
+        //ottengo il valore dell'indice del nodo corrente
+        int indexNodeTemp = nodeTemp->index;
 
-        for(int i = numeroStazioni-1; i > 0; i--){
+        for(int i = indexNodeTemp+1; i<numeroStazioni; i++){
 
             //se la stazione è la stazione di partenza, fine scorrimento
-            if(nodeTemp->data == lista[i]->distanza){
+            if(nodeTemp->data - nodeTemp->autonomia > lista[i]->distanza){
+                //printf("stazione non raggiungibile\n");
                 break;
             }
             else {
@@ -1048,21 +1059,22 @@ void printDecrescente(stazione** lista,int numeroStazioni,FILE* out){
                 if(nodeTemp->data - nodeTemp->autonomia <= lista[i]->distanza && visitato[i] == 0){
 
                     //il nuovo nodo
-                    node* nodeAdd = createNewNode(lista[i]->distanza, lista[i]->maxAutonomia,nodeTemp->step+1);
+                    node* nodeAdd = createNewNode(lista[i]->distanza, lista[i]->maxAutonomia,nodeTemp->step+1,i);
 
                     //aggiungere il nodo alla queue e all'albero
                     enqueue(queue, nodeAdd);
-                    //fixme
+
                     addChild(nodeTemp, nodeAdd);
+                    //printf("stazione aggiunta\n");
                     visitato[i] = 1;
                     //printf("aggiunto un nodo\n");
                 }
             }
 
         }
-
-        sortQueueVer2(queue);
-
+        //todo+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //sortQueueVer2(queue);
+        sortQueueVer3(queue);
         //printQueue(queue);
         //printf("\n\n");
     }
@@ -1076,7 +1088,7 @@ void printDecrescente(stazione** lista,int numeroStazioni,FILE* out){
         return;
     }
 
-    //printPathToRoot(nodeFinal);
+    printPathToRoot(nodeFinal);
     printPathToRootToFile(nodeFinal,out);
     fprintf(out,"\n");
     printf("\n");
@@ -1135,3 +1147,83 @@ void sortQueueVer2(queue* queue)
     queue->back = tempNode;
 }
 
+//---------------------------------------------
+void split(node* head, node** front, node** back)
+{
+    node* fast;
+    node* slow;
+    slow = head;
+    fast = head->next;
+
+    // Advance 'fast' two nodes, and advance 'slow' one node
+    while (fast != NULL) {
+        fast = fast->next;
+        if (fast != NULL) {
+            slow = slow->next;
+            fast = fast->next;
+        }
+    }
+
+    // 'slow' is before the midpoint in the list, so split it in two at that point.
+    *front = head;
+    *back = slow->next;
+    slow->next = NULL;
+}
+
+node* merge(node* a, node* b)
+{
+    node* result = NULL;
+
+    // Base cases
+    if (a == NULL)
+        return b;
+    else if (b == NULL)
+        return a;
+
+    // Recursively sort
+    if (a->step < b->step || (a->step == b->step && a->data < b->data)) {
+        result = a;
+        result->next = merge(a->next, b);
+    }
+    else {
+        result = b;
+        result->next = merge(a, b->next);
+    }
+    return result;
+}
+
+void mergeSort(node** head)
+{
+    node* h = *head;
+    node* a;
+    node* b;
+
+    // Base case -- length 0 or 1
+    if ((h == NULL) || (h->next == NULL)) {
+        return;
+    }
+
+    // Split head into 'a' and 'b' sublists
+    split(h, &a, &b);
+
+    // Recursively sort sublists
+    mergeSort(&a);
+    mergeSort(&b);
+
+    // Answer = merge the two sorted lists together
+    *head = merge(a, b);
+}
+
+void sortQueueVer3(queue* queue)
+{
+    // Sort the queue by 'step' and then by 'data' using Merge Sort
+    mergeSort(&(queue->front));
+
+    // Update the 'back' pointer of the queue
+    node* tempNode = queue->front;
+    while (tempNode!= NULL && tempNode->next != NULL)
+    {
+        tempNode = tempNode->next;
+    }
+    queue->back = tempNode;
+}
