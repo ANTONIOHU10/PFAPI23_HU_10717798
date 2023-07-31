@@ -104,19 +104,13 @@ int main() {
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_107.txt","r");
-    printf("---------------------------------------------------------\n");
+    FILE *file = stdin;
+    //printf("---------------------------------------------------------\n");
 
     //file da scrivere
     FILE *file_out = stdout;
 
-    // = stdin; ottengo il caso di stdin
-    if(file == NULL){
-        //printf("Errore apertura file\n");
-        perror("Errore apertura file");
-        exit(1);
-        //return -1;
-    }
+
     //dichiarazione per lettura
     char operazione[20];
     int distanza=0;
@@ -130,19 +124,6 @@ int main() {
 
     //leggere una riga di comando
     while (fscanf(file,"%s",operazione) != EOF){
-        /*
-        if(search(radice,5553)!=NULL && numeroIstruzione < 4499){
-            printf("riga %d\n",numeroIstruzione);
-            printf("le autonomie di 5553 sono: \n");
-            for(int i=0;i<search(radice,5553)->numero_auto;i++){
-                printf("%d ",search(radice,5553)->auto_parcheggiate[i]);
-            }
-            printf("\n");
-
-        }*/
-        //printf("---------------------------------------------------------\n");
-        //print_stazione_with_autonomie(radice);
-        //printf("---------------------------------------------------------\n");
 
         //OK funziona e si compila con il verificatore
         if(strcmp(operazione,"aggiungi-stazione") == 0) {
@@ -160,15 +141,12 @@ int main() {
                         fprintf(file_out,"non aggiunta\n");
                     } else {
 
-                        //fixme non creo il nodo qui, ma dentro la funzione insert
-
                         //leggo le autonomie
                         for (int i = 0; i < numero_auto; i++){
                             if(fscanf(file,"%d",&autonomie_temp[i]) != EOF){
                                 //leggo una autonomia e salvo nella lista, eventuale miglioramento da fare
                             }
                         }
-                        //printf("aggiungo stazione\n");
 
                         //ottengo il massimo valore dalla max heap
                         radice = insert(radice,distanza,numero_auto,autonomie_temp);
@@ -189,8 +167,6 @@ int main() {
                 if(search(radice,distanza) == NULL){
                     //non esiste la stazione
 
-                    //printf("stazione non presente\n");
-                    //printf("stazione %d non presente\n",distanza);
                     fprintf(file_out,"non demolita\n");
                 } else {
                     //fixme:Attenzione l'autonomia va a sostituire le autonomie di un'altra stazione
@@ -209,7 +185,6 @@ int main() {
         else if(strcmp(operazione,"aggiungi-auto") == 0) {
             if(fscanf(file,"%d %d",&distanza, &autonomia) != EOF){
 
-                //printf("--->aggiungi auto %d alla stazione %d\n",autonomia,distanza);
                 //------------------------se esiste la stazione-------------------------------
                 if(search(radice,distanza) == NULL){
                     //printf("aggiungi-auto  ->non esiste la stazione  %d\n",distanza);
@@ -220,7 +195,6 @@ int main() {
                     if(search(radice,distanza)->numero_auto < DIMENSIONE_PARCHEGGIO){
                         //printf("aggiungi-auto  -> aggiunta auto %d alla stazione %d\n",autonomia,distanza);
 
-                        //search(radice,distanza)->auto_parcheggiate = insert_autonomie(search(radice,distanza)->auto_parcheggiate, autonomia);
                         //fixme aggiungo l'autonomia alla stazione, e l'autonomia massima dovrebbe essere già aggiornata
                         insertHeap(search(radice,distanza),autonomia);
 
@@ -242,20 +216,18 @@ int main() {
                 stazione* stazione_temp = search(radice,distanza);
                 //------------------------se esiste la stazione-------------------------------
                 if(stazione_temp == NULL){
-                    //printf("rottama auto -> non esiste la stazione %d\n",distanza);
+
                     fprintf(file_out,"non rottamata\n");
                 } else {
                     //se ha almeno un auto
                     if(stazione_temp->numero_auto > 0){
                         //cancello l'autonomia dalla MaxHeap della stazione richiesta
                         if(deleteElementHeap(stazione_temp,&stazione_temp->numero_auto,autonomia) == -1){
-                            //printf("\n\nautonomia %d non trovata dalla stazione %d\n",autonomia,distanza);
-                            //printf("autonomia %d non trovata dalla stazione %d\n",autonomia,distanza);
-                            //fixme perché l'autonomia si scomparisce da qualche parte
+
                             fprintf(file_out,"non rottamata\n");
                         } else{
                             search(radice,distanza)->maxAutonomia = search(radice,distanza)->auto_parcheggiate[0];
-                            //printf("autonomia %d trovata dalla stazione %d  - cancello\n",autonomia,distanza);
+
                             fprintf(file_out,"rottamata\n");
                         }
 
@@ -270,11 +242,7 @@ int main() {
         else if(strcmp(operazione,"pianifica-percorso") == 0) {
             int distanza_destinazione;
             if(fscanf(file,"%d %d",&distanza,&distanza_destinazione) != EOF){
-                //printf("--->pianifica percorso %d %d\n",distanza,distanza_destinazione);
-                //fprintf(file_out,"(pianifica percorso)   partenza: %d  destinazione: %d\n",distanza,distanza_destinazione);
-                printf("(pianifica percorso)   partenza: %d  destinazione: %d\n",distanza,distanza_destinazione);
 
-                //todo --------------------------------------------------
                 int numeroStazioniFiltrate=0;
                 int indice=0;
                 stazione** lista = createListStation(numero_stazioni);
@@ -283,9 +251,7 @@ int main() {
                 if(distanza < distanza_destinazione){
                     numeroStazioniFiltrate = inorderTraversalCrescente(radice,lista,&indice,distanza,distanza_destinazione);
 
-                    //todo ------------------------------------------------------------------------------------------------------------------------
                     printPathCrescente(lista,numeroStazioniFiltrate,file_out);
-                    //todo -------------------------------------------------------------------------------------------------------------------
                 }
 
                 else if (distanza > distanza_destinazione){
@@ -299,7 +265,6 @@ int main() {
                 }
 
                 free(lista);
-                //todo --------------------------------------------------
 
             }
         }
@@ -308,10 +273,7 @@ int main() {
         //inorder(radice);
     }
 
-    printf("---------------------------------------------------------\n");
-
     //inorder(radice);
-
 
     freeStazione(radice);
     fclose(file);
@@ -569,14 +531,14 @@ void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
     //verifico se la stazione di destinazione è raggiungibile
     for(int i=1;i<numeroStazioni;i++){
         if(vettore[i] == INT_MAX){
-            printf("---percorso: IMPOSSIBILE\n\n");
+            //printf("---percorso: IMPOSSIBILE\n\n");
             fprintf(out,"nessun percorso\n");
             free(vettore);
             free(path);
             return;
         }
     }
-    printf("---percorso: ");
+    //printf("---percorso: ");
 
     //partenza
     int prev = vettore[numeroStazioni-1];
@@ -593,20 +555,20 @@ void printPathCrescente(stazione** lista,int numeroStazioni,FILE* out) {
         }
     }
 
-    printf("\n");
+    //printf("\n");
     //partenza
-    printf("%d ",lista[0]->distanza);
+    //printf("%d ",lista[0]->distanza);
     fprintf(out,"%d ",lista[0]->distanza);
 
     for(int n=0;n<numeroStazioni;n++){
         if(path[n] != INT_MAX){
-            printf("%d ",path[n]);
+            //printf("%d ",path[n]);
             fprintf(out,"%d ",path[n]);
         }
     }
 
     //destinazione
-    printf("%d\n",lista[numeroStazioni-1]->distanza);
+    //printf("%d\n",lista[numeroStazioni-1]->distanza);
     fprintf(out,"%d\n",lista[numeroStazioni-1]->distanza);
     //libero memoria
     free(vettore);
@@ -944,7 +906,7 @@ void printDecrescente(stazione** lista,int numeroStazioni,FILE* out){
     }
 
     if(nodeFinal == NULL){
-        printf("NESSUN PERCORSO\n");
+        //printf("NESSUN PERCORSO\n");
         fprintf(out,"nessun percorso\n");
         free(visitato);
         freeTree(root);
@@ -952,10 +914,10 @@ void printDecrescente(stazione** lista,int numeroStazioni,FILE* out){
         return;
     }
 
-    printPathToRoot(nodeFinal);
+    //printPathToRoot(nodeFinal);
     printPathToRootToFile(nodeFinal,out);
     fprintf(out,"\n");
-    printf("\n");
+    //printf("\n");
     free(visitato);
     freeTree(root);
     free(queue);
