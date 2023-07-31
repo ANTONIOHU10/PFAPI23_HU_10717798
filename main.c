@@ -11,16 +11,11 @@ struct Stazione{
     int distanza; //key
     int numero_auto;
     int maxAutonomia;
-    struct Autonomie* auto_parcheggiate;
+
+    //utilizzo un maxHeap per le autonomie
+    int auto_parcheggiate[DIMENSIONE_PARCHEGGIO];
     struct Stazione* sinistro;
     struct Stazione* destro;
-
-};
-//struttura per le autonomie, BST
-struct Autonomie{
-    int autonomia;
-    struct Autonomie* sinistro;
-    struct Autonomie* destro;
 };
 
 struct Node
@@ -47,30 +42,16 @@ struct Queue
 
 typedef struct Queue queue;
 typedef struct Node node;
-typedef struct Autonomie autonomie;
 typedef struct Stazione stazione;
 
-stazione* new_node(int x, int y, autonomie* auto_parcheggiate, int maxAutonomia);
+stazione* new_node(int x,int numero_auto,int* auto_parcheggiate);
 stazione* search(stazione* root, int x);
-stazione* insert(stazione* root, int x, int y, autonomie* auto_parcheggiate, int maxAutonomia);
+stazione* insert(stazione* root, int distanza ,int numero_auto,int* auto_parcheggiate);
 stazione* find_minimum(stazione* root);
 stazione* delete(stazione* root, int x);
 void inorder(stazione* root);
 void freeStazione(stazione* root);
 
-autonomie* new_node_autonomia(int x);
-autonomie* search_autonomie(autonomie* root, int x);
-autonomie* insert_autonomie(autonomie* root, int x);
-autonomie* find_minimum_autonomie(autonomie* root);
-autonomie* delete_autonomie(autonomie* root, int x);
-void inorder_autonomie(autonomie* root);
-void freeAutonomie(autonomie* root);
-autonomie* find_maximum_autonomie(autonomie* root);
-
-void decrease_number_auto(stazione* stazione);
-void increase_number_auto(stazione* stazione);
-void print_stazione_with_autonomie(stazione* root);
-autonomie* copyAutonomie(autonomie* root);
 stazione** createListStation(int size);
 
 
@@ -109,11 +90,21 @@ node* mergeList(node* a,node* b);
 void mergeSort(node** headRef);
 void sortQueueVer3(queue* queue);
 
+//-----------------------------maxHeap--------------------------------------
+void swapHeap(int* x, int* y);
+void heapifyHeap(stazione* station, int n, int i);
+void printArrayHeap(stazione* station);
+int deleteElementHeap(stazione* stazione, int* heap_size,int key);
+void insertHeap(stazione* station, int new_num);
+
+int* copyAutonomie(int* autonomia);
+
 int main() {
+
     stazione* radice = NULL;
 
     //file da leggere
-    FILE *file = fopen("open_100.txt","r");
+    FILE *file = fopen("open_107.txt","r");
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
@@ -138,25 +129,26 @@ int main() {
     int numero_stazioni = 0;
 
     //leggere una riga di comando
-
     while (fscanf(file,"%s",operazione) != EOF){
+        /*
+        if(search(radice,5553)!=NULL && numeroIstruzione < 4499){
+            printf("riga %d\n",numeroIstruzione);
+            printf("le autonomie di 5553 sono: \n");
+            for(int i=0;i<search(radice,5553)->numero_auto;i++){
+                printf("%d ",search(radice,5553)->auto_parcheggiate[i]);
+            }
+            printf("\n");
+
+        }*/
         //printf("---------------------------------------------------------\n");
         //print_stazione_with_autonomie(radice);
         //printf("---------------------------------------------------------\n");
 
+        //OK funziona e si compila con il verificatore
         if(strcmp(operazione,"aggiungi-stazione") == 0) {
             if(fscanf(file,"%d %d",&distanza, &numero_auto) != EOF){
-                int maxAutonomiaTemp = 0;
-                for (int i = 0; i < numero_auto; i++){
-                    if(fscanf(file,"%d",&autonomie_temp[i]) != EOF){
-                        //leggo una autonomia
-                        if(autonomie_temp[i] > maxAutonomiaTemp){
-                            maxAutonomiaTemp = autonomie_temp[i];
-                        }
-                    }
-                }
-
                 //printf("--->aggiungi stazione %d con %d auto\n",distanza,numero_auto);
+
                 //se il numero di auto è maggiore di 512 non aggiungo la stazione
                 if(numero_auto>512){
                     //printf("numero auto maggiore di 512\n");
@@ -167,26 +159,29 @@ int main() {
                         //printf("stazione già presente\n");
                         fprintf(file_out,"non aggiunta\n");
                     } else {
-                        //printf("aggiungo stazione\n");
-                        //salvo le autonomie in un albero
-                        autonomie* auto_parcheggiate = NULL;
 
-                        for(int i = 0; i < numero_auto; i++){
-                            auto_parcheggiate = insert_autonomie(auto_parcheggiate, autonomie_temp[i]);
+                        //fixme non creo il nodo qui, ma dentro la funzione insert
+
+                        //leggo le autonomie
+                        for (int i = 0; i < numero_auto; i++){
+                            if(fscanf(file,"%d",&autonomie_temp[i]) != EOF){
+                                //leggo una autonomia e salvo nella lista, eventuale miglioramento da fare
+                            }
                         }
-                        radice = insert(radice, distanza, numero_auto, auto_parcheggiate, maxAutonomiaTemp);
+                        //printf("aggiungo stazione\n");
 
-                        //aggiorno il numero di stazioni
+                        //ottengo il massimo valore dalla max heap
+                        radice = insert(radice,distanza,numero_auto,autonomie_temp);
+
                         numero_stazioni++;
                         fprintf(file_out,"aggiunta\n");
 
                     }
-
                 }
-
             }
         }
 
+            //OK non c'è problema con valgrind funziona il verificatore
         else if(strcmp(operazione,"demolisci-stazione") == 0) {
             if(fscanf(file,"%d",&distanza) != EOF){
 
@@ -198,12 +193,6 @@ int main() {
                     //printf("stazione %d non presente\n",distanza);
                     fprintf(file_out,"non demolita\n");
                 } else {
-                    //esiste la stazione e la cancello
-
-                    //freeAutonomie(search(radice,distanza)->auto_parcheggiate);
-                    //search(radice,distanza)->auto_parcheggiate = NULL;
-                    //fixme: per le autonomie ho aggiunto una riga nella funzione delete per togliere tutte le autonomie
-                    //funziona per tutti  i test senza leak
                     //fixme:Attenzione l'autonomia va a sostituire le autonomie di un'altra stazione
                     radice = delete(radice,distanza);
 
@@ -212,13 +201,11 @@ int main() {
 
                     fprintf(file_out,"demolita\n");
 
-                    //printf("\n     le stazioni rimaste sono:\n");
-                    //inorder(radice);
-                    //printf("\n");
                 }
             }
         }
 
+            //OK non c'è problema con valgrind
         else if(strcmp(operazione,"aggiungi-auto") == 0) {
             if(fscanf(file,"%d %d",&distanza, &autonomia) != EOF){
 
@@ -229,76 +216,54 @@ int main() {
                     fprintf(file_out,"non aggiunta\n");
                 } else {
                     //se il parcheggio è già pieno
+
                     if(search(radice,distanza)->numero_auto < DIMENSIONE_PARCHEGGIO){
                         //printf("aggiungi-auto  -> aggiunta auto %d alla stazione %d\n",autonomia,distanza);
-                        search(radice,distanza)->auto_parcheggiate = insert_autonomie(search(radice,distanza)->auto_parcheggiate, autonomia);
-                        increase_number_auto(search(radice,distanza));
-                        //aggiorno la maxAutonomia
-                        if (autonomia>search(radice,distanza)->maxAutonomia){
-                            search(radice,distanza)->maxAutonomia = autonomia;
-                        }
+
+                        //search(radice,distanza)->auto_parcheggiate = insert_autonomie(search(radice,distanza)->auto_parcheggiate, autonomia);
+                        //fixme aggiungo l'autonomia alla stazione, e l'autonomia massima dovrebbe essere già aggiornata
+                        insertHeap(search(radice,distanza),autonomia);
+
                         fprintf(file_out,"aggiunta\n");
-                        //printf("-----------aggiungi auto alla stazione %d-------------------\n",distanza);
-                        //printf("\n");
-                        //inorder_autonomie(search(radice,distanza)->auto_parcheggiate);
-                        //printf("\n");
+
                     } else {
                         //printf("aggiungi-auto  -> parcheggio della stazione %d pieno\n",distanza);
 
                         fprintf(file_out,"non aggiunta\n");
                     }
                 }
-                //fprintf(file_out,"aggiungi auto\n");
-
             }
         }
 
         else if(strcmp(operazione, "rottama-auto") == 0) {
             if(fscanf(file,"%d %d",&distanza,&autonomia) != EOF){
-                //printf("--->rottama auto %d alla stazione %d\n",autonomia,distanza);
+
+                //metto la stazione trovata dentro stazione_temp per facilitare la lettura
+                stazione* stazione_temp = search(radice,distanza);
                 //------------------------se esiste la stazione-------------------------------
-                if(search(radice,distanza) == NULL){
+                if(stazione_temp == NULL){
                     //printf("rottama auto -> non esiste la stazione %d\n",distanza);
                     fprintf(file_out,"non rottamata\n");
                 } else {
                     //se ha almeno un auto
-                    if(search(radice,distanza)->numero_auto > 0){
-
-                        //se esiste la stazione, stampo le sue auto
-                        //todo test se la stazione esiste
-                        if(search(radice,distanza)!=NULL){
-                            //printf("\n\n");
-                            //printf("|||||||||||||||| la stazione  esiste %d\n",distanza);
-                            //printf("le sue auto sono:\n");
-                            //inorder_autonomie(search(radice,distanza)->auto_parcheggiate);
-                            //printf("\n\n");
-                        }
-                        //se non esiste l'autonomia
-                        if(search_autonomie(search(radice,distanza)->auto_parcheggiate, autonomia) == NULL){
-                            //printf("rottama auto ->  non esiste l'autonomia %d della stazione %d\n",autonomia,distanza);
+                    if(stazione_temp->numero_auto > 0){
+                        //cancello l'autonomia dalla MaxHeap della stazione richiesta
+                        if(deleteElementHeap(stazione_temp,&stazione_temp->numero_auto,autonomia) == -1){
+                            //printf("\n\nautonomia %d non trovata dalla stazione %d\n",autonomia,distanza);
+                            //printf("autonomia %d non trovata dalla stazione %d\n",autonomia,distanza);
+                            //fixme perché l'autonomia si scomparisce da qualche parte
                             fprintf(file_out,"non rottamata\n");
-                        } else {
-                            //printf("rottama auto -> esiste l'autonomia %d della stazione %d\n",autonomia,distanza);
-
-                            //fixme problema con delete_autonomie !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            search(radice,distanza)->auto_parcheggiate=delete_autonomie(search(radice,distanza)->auto_parcheggiate, autonomia);
-                            //找到站点【获取站点的车辆们】 =删除站点【寻找到站点 获取要删除站点车辆们，传入要删除的某一车辆】
-                            //se l'autonomia da togliere è quella massima, dopo averla tolta, aggiorno la maxAutonomia
-                            if(search(radice,distanza)->maxAutonomia == autonomia){
-                                search(radice,distanza)->maxAutonomia = find_maximum_autonomie(search(radice,distanza)->auto_parcheggiate)->autonomia;
-                            }
-                            //decrementare il numero di auto
-                            decrease_number_auto(search(radice,distanza));
-                            //aggiorno la maxAutonomia
-
+                        } else{
+                            search(radice,distanza)->maxAutonomia = search(radice,distanza)->auto_parcheggiate[0];
+                            //printf("autonomia %d trovata dalla stazione %d  - cancello\n",autonomia,distanza);
                             fprintf(file_out,"rottamata\n");
                         }
+
                     } else {
                         fprintf(file_out,"non rottamata\n");
                     }
                 }
 
-                //fprintf(file_out,"rottama auto\n");
             }
         }
 
@@ -310,44 +275,27 @@ int main() {
                 printf("(pianifica percorso)   partenza: %d  destinazione: %d\n",distanza,distanza_destinazione);
 
                 //todo --------------------------------------------------
-                int numeroStazioniFiltrate;
+                int numeroStazioniFiltrate=0;
                 int indice=0;
                 stazione** lista = createListStation(numero_stazioni);
 
                 //se la distanza di partenza è minore della distanza di destinazione
                 if(distanza < distanza_destinazione){
                     numeroStazioniFiltrate = inorderTraversalCrescente(radice,lista,&indice,distanza,distanza_destinazione);
-                    //se la distanza di partenza è maggiore della distanza di destinazione
 
-                    /*
-                    printf("ci sono %d stazioni\n",numeroStazioniFiltrate);
-                    for(int i=0 ; i< numeroStazioniFiltrate;i++) {
-                        printf("%d ",lista[i]->distanza);
-                    }
-                    printf("\n\n");
-                     */
                     //todo ------------------------------------------------------------------------------------------------------------------------
                     printPathCrescente(lista,numeroStazioniFiltrate,file_out);
                     //todo -------------------------------------------------------------------------------------------------------------------
-                } else {
+                }
+
+                else if (distanza > distanza_destinazione){
                     numeroStazioniFiltrate = inorderTraversalDecrescente(radice,lista,&indice,distanza,distanza_destinazione);
 
-                    /*
-                    printf("---------------------  INVERSO ---------------------\n\n");
-                    printf("ci sono %d stazioni\n",numeroStazioniFiltrate);
-                    for(int i=0 ; i< numeroStazioniFiltrate;i++) {
-                        //printf("%d ",lista[i]->distanza);
-                    }
-                    printf("\n++++++++++++++++++++AUTONOMIE ++++++++++++++++++++\n");
-                    for(int i=0; i<numeroStazioniFiltrate;i++){
-                        //printf("%d ",lista[i]->maxAutonomia);
-                    }*/
-                    //printf("\n\n\n\n");
-
                     printDecrescente(lista,numeroStazioniFiltrate,file_out);
-                    //fprintf(file_out,"pianifica percorso caso contrario\n");
-                    //printPathDecrescente(lista,numeroStazioniFiltrate,file_out);
-                    //BFS();
+
+                }
+                else if(distanza == distanza_destinazione){
+                    fprintf(file_out,"distanza\n");
                 }
 
                 free(lista);
@@ -355,11 +303,16 @@ int main() {
 
             }
         }
+
+        //printf("\n------------informazioni -----------------\n");
+        //inorder(radice);
     }
 
     printf("---------------------------------------------------------\n");
 
     //inorder(radice);
+
+
     freeStazione(radice);
     fclose(file);
     fclose(file_out);
@@ -371,13 +324,23 @@ int main() {
 //creazione nodo
 //x  = distanza
 //y = numero auto
-stazione* new_node(int x, int y,autonomie* auto_parcheggiate, int maxAutonomia){
-    stazione* temp;
+stazione* new_node(int x,int numero_auto,int* auto_parcheggiate){
+    stazione* temp = NULL;
     temp = malloc(sizeof(stazione));
     temp->distanza = x;
-    temp->numero_auto = y;
-    temp->auto_parcheggiate = auto_parcheggiate;
-    temp->maxAutonomia = maxAutonomia;
+    temp->numero_auto = 0;
+    memset(temp->auto_parcheggiate,0,DIMENSIONE_PARCHEGGIO*sizeof(int));
+    for(int i=0;i<numero_auto;i++){
+        insertHeap(temp,auto_parcheggiate[i]);
+    }
+    //è obbligatorio inizializzare la variabile maxAutonomia
+    temp->maxAutonomia = 0;
+    //printf("----------aggiungi stazione  -----------\n");
+    for(int i=0;i<numero_auto;i++){
+        //printf("auto_parcheggiate[%d] = %d\n",i,temp->auto_parcheggiate[i]);
+    }
+    temp->maxAutonomia = temp->auto_parcheggiate[0];
+    //printf("assegnazione maxAutonomia adesso vale: %d\n",temp->maxAutonomia);
     temp->sinistro = NULL;
     temp->destro = NULL;
 
@@ -396,13 +359,13 @@ stazione* search(stazione* root, int x){
 //x  = distanza
 //y = numero auto
 //inserimento nodo
-stazione* insert(stazione* root, int x, int y, autonomie* auto_parcheggiate,int maxAutonomia){
+stazione* insert(stazione* root,int distanza,int numero_auto,int* auto_parcheggiate) {
     if (root == NULL)
-        return new_node(x,y,auto_parcheggiate,maxAutonomia);
-    else if (x > root->distanza)
-        root->destro= insert(root->destro, x,y,auto_parcheggiate,maxAutonomia);
+        return new_node(distanza,numero_auto,auto_parcheggiate);
+    else if (distanza > root->distanza)
+        root->destro= insert(root->destro,distanza,numero_auto,auto_parcheggiate);
     else
-        root -> sinistro = insert(root->sinistro, x,y,auto_parcheggiate,maxAutonomia);
+        root -> sinistro = insert(root->sinistro, distanza,numero_auto,auto_parcheggiate);
     return root;
 }
 
@@ -432,9 +395,9 @@ stazione* delete(stazione* root, int x) {
         //se il nodo da cancellare è una foglia, non ha figli
         if (root->sinistro == NULL && root->destro == NULL){
             //fixme aggiunta free, per togliere le autonomie, non so se c'è eventuale errore
-            freeAutonomie(root->auto_parcheggiate);
+            //freeAutonomie(root->auto_parcheggiate);
             //fixme: prova
-            root->auto_parcheggiate = NULL;
+            //root->auto_parcheggiate = NULL;
             free(root);
             return NULL;
         }
@@ -448,9 +411,9 @@ stazione* delete(stazione* root, int x) {
                 //figlio destro è il nuovo nodo temporaneo
                 temp = root->sinistro;
             //fixme aggiunta free, per togliere le autonomie, non so se c'è eventuale errore
-            freeAutonomie(root->auto_parcheggiate);
+            //freeAutonomie(root->auto_parcheggiate);
             //fixme: prova
-            root->auto_parcheggiate = NULL;
+            //root->auto_parcheggiate = NULL;
             free(root);
             return temp;
         }
@@ -461,20 +424,44 @@ stazione* delete(stazione* root, int x) {
             root->numero_auto = temp->numero_auto;
             root->maxAutonomia = temp ->maxAutonomia;
             //fixme per prova
-            freeAutonomie(root->auto_parcheggiate);
-            root->auto_parcheggiate = copyAutonomie(temp->auto_parcheggiate);
+            //freeAutonomie(root->auto_parcheggiate);
+            for(int i=0;i<DIMENSIONE_PARCHEGGIO;i++){
+                root->auto_parcheggiate[i] = temp->auto_parcheggiate[i];
+            }
+            //root->auto_parcheggiate = copyAutonomie(temp->auto_parcheggiate);
             root->destro = delete(root->destro, temp->distanza);
         }
     }
     return root;
 }
 
+int* copyAutonomie(int* autonomia) {
+    // Allocate memory for the new array
+    int* new_autonomia = malloc(DIMENSIONE_PARCHEGGIO * sizeof(int));
+    if(new_autonomia == NULL) {
+        printf("Memory allocation failed\n");
+        return NULL;
+    }
+
+    // Copy elements from the old array to the new one
+    for(int i = 0; i < DIMENSIONE_PARCHEGGIO; i++) {
+        new_autonomia[i] = autonomia[i];
+    }
+
+    return new_autonomia;
+}
+
+
 //stampa in ordine
 void inorder(stazione *root){
     if (root != NULL)
     {
         inorder(root->sinistro);
-        printf(" %d ", root->distanza);
+        printf(" %d autonomie (maxAutonomia = %d )-> ha %d autonomie  ->", root->distanza,root->maxAutonomia,root->numero_auto);
+        for(int i =0;i<root->numero_auto;i++){
+            printf(" %d ",root->auto_parcheggiate[i]);
+        }
+        printf("\n");
         inorder(root->destro);
     }
 }
@@ -488,105 +475,10 @@ void freeStazione(stazione* root) {
 
     freeStazione(root->sinistro);
     freeStazione(root->destro);
-    freeAutonomie(root->auto_parcheggiate);
+    //freeAutonomie(root->auto_parcheggiate);
     free(root);
 }
 //-----------------------------stazione----------------------------
-autonomie* new_node_autonomia(int x){
-    autonomie *temp;
-    temp = malloc(sizeof(autonomie));
-    temp->autonomia = x;
-    temp->sinistro = NULL;
-    temp->destro = NULL;
-
-    return temp;
-}
-
-//ricerca nodo
-autonomie *search_autonomie(autonomie *root, int x){
-    if (root == NULL || root->autonomia == x)
-        return root;
-    else if (x > root->autonomia)
-        return search_autonomie(root->destro, x);
-    else
-        return search_autonomie(root->sinistro, x);
-}
-
-autonomie* insert_autonomie(autonomie* root, int x){
-    if (root == NULL)
-        return new_node_autonomia(x);
-    else if (x > root->autonomia)
-        root->destro = insert_autonomie(root->destro, x);
-    else
-        root -> sinistro = insert_autonomie(root->sinistro, x);
-    return root;
-}
-
-autonomie* find_minimum_autonomie(autonomie* root) {
-    if (root == NULL)
-        return NULL;
-    else if (root->sinistro != NULL)
-        return find_minimum_autonomie(root->sinistro);
-    return root;
-}
-
-autonomie* find_maximum_autonomie(autonomie* root) {
-    if (root == NULL)
-        return NULL;
-    else if (root->destro != NULL)
-        return find_maximum_autonomie(root->destro);
-    return root;
-}
-
-
-autonomie* delete_autonomie(autonomie * root, int x) {
-
-    if (root == NULL)
-        return NULL;
-    if (x > root->autonomia)
-        root->destro = delete_autonomie(root->destro, x);
-    else if (x < root->autonomia)
-        root->sinistro= delete_autonomie(root->sinistro, x);
-    else {
-        if (root->sinistro == NULL && root->destro == NULL){
-            free(root);
-            return NULL;
-        }
-        else if (root->sinistro == NULL || root->destro == NULL){
-            autonomie *temp = NULL;
-            if (root->sinistro == NULL)
-                temp = root->destro;
-            else
-                temp = root->sinistro;
-            free(root);
-            return temp;
-        }
-        else {
-            autonomie* temp = find_minimum_autonomie(root->destro);
-            root->autonomia= temp->autonomia;
-            root->destro = delete_autonomie(root->destro, temp->autonomia);
-        }
-    }
-    return root;
-}
-
-void inorder_autonomie(autonomie *root){
-    if (root != NULL)
-    {
-        inorder_autonomie(root->sinistro);
-        printf(" %d ", root->autonomia);
-        inorder_autonomie(root->destro);
-    }
-}
-
-void freeAutonomie(autonomie* root) {
-    if (root == NULL)
-        return;
-
-    freeAutonomie(root->sinistro);
-    freeAutonomie(root->destro);
-    free(root);
-}
 
 void decrease_number_auto(stazione* stazione){
     if(stazione != NULL) {
@@ -599,34 +491,6 @@ void increase_number_auto(stazione* stazione){
     }
 }
 
-void print_stazione_with_autonomie(stazione* root) {
-    if (root == NULL){
-        //printf("\n<<<Non ci sono stazioni>>>\n");
-        return;
-
-    } else {
-        printf("-------------------------------------------------------------------------------------\n");
-        printf("\n<<<Stazione %d ha %d autonomie>>>\n", root->distanza, root->numero_auto);
-        printf("...Autonomie sono: ");
-        inorder_autonomie(root->auto_parcheggiate);
-        printf("\n\n");
-
-        print_stazione_with_autonomie(root->sinistro);
-        print_stazione_with_autonomie(root->destro);
-    }
-
-
-}
-struct Autonomie* copyAutonomie(struct Autonomie* root) {
-    if (root == NULL)
-        return NULL;
-
-    struct Autonomie* new_node = (struct Autonomie*) malloc(sizeof(struct Autonomie));
-    new_node->autonomia = root->autonomia;
-    new_node->sinistro = copyAutonomie(root->sinistro);
-    new_node->destro = copyAutonomie(root->destro);
-    return new_node;
-}
 
 //------------------------------lista di adiacenza--------------------------------------------
 
@@ -1226,4 +1090,72 @@ void sortQueueVer3(queue* queue)
         tempNode = tempNode->next;
     }
     queue->back = tempNode;
+}
+//----------------------------max heap---------------------------------
+//scambiare due elementi nel max heap
+void swapHeap(int *x, int *y) {
+    int temp = *x;
+    *x = *y;
+    *y = temp;
+}
+
+//per mantenere la proprietà di maxHeap
+void heapifyHeap(stazione* station, int n, int i) {
+    int largest = i; // Initialize largest as root
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+
+    if (left < n && station->auto_parcheggiate[left] > station->auto_parcheggiate[largest])
+        largest = left;
+
+    if (right < n && station->auto_parcheggiate[right] > station->auto_parcheggiate[largest])
+        largest = right;
+
+    if (largest != i) {
+        swapHeap(&station->auto_parcheggiate[i], &station->auto_parcheggiate[largest]);
+        heapifyHeap(station, n, largest);
+    }
+}
+//per inserire un elemento
+void insertHeap(stazione* station, int new_num) {
+    if (station->numero_auto == DIMENSIONE_PARCHEGGIO) {
+        printf("\nOverflow: Could not insert Key\n");
+        return;
+    }
+
+    // Insert the new number at the end
+    station->numero_auto++;
+    station->auto_parcheggiate[station->numero_auto - 1] = new_num;
+
+    // Heapify the tree from bottom to top
+    for (int i = station->numero_auto / 2 - 1; i >= 0; i--)
+        heapifyHeap(station, station->numero_auto, i);
+
+
+    station->maxAutonomia = station->auto_parcheggiate[0];
+}
+
+//per stampare il max heap
+void printArrayHeap(stazione* station) {
+    for (int i = 0; i < station->numero_auto; ++i)
+        printf("%d ", station->auto_parcheggiate[i]);
+    printf("\n");
+}
+
+//per cancellare un elemento determinato nel max heap
+int deleteElementHeap(stazione* stazione, int *heap_size, int key) {
+    int i;
+    for(i=0; i<*heap_size; i++) {
+        if(key == stazione->auto_parcheggiate[i])
+            break;
+    }
+
+    if(i < *heap_size) {
+        swapHeap(&stazione->auto_parcheggiate[i], &stazione->auto_parcheggiate[*heap_size - 1]);
+        (*heap_size)--;
+        heapifyHeap(stazione, *heap_size, 0);
+        return key;
+    }
+
+    return -1;
 }
