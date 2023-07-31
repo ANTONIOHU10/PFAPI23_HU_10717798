@@ -228,6 +228,9 @@ int main() {
                         } else{
                             search(radice,distanza)->maxAutonomia = search(radice,distanza)->auto_parcheggiate[0];
 
+                            if(search(radice,distanza)->numero_auto == 0){
+                                search(radice,distanza)->maxAutonomia = 0;
+                            }
                             fprintf(file_out,"rottamata\n");
                         }
 
