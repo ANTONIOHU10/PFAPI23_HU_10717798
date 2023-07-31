@@ -108,7 +108,7 @@ int main() {
     printf("---------------------------------------------------------\n");
 
     //file da scrivere
-    FILE *file_out = fopen("a_OUTPUT_TEST.txt","w");
+    FILE *file_out = stdout;
 
     // = stdin; ottengo il caso di stdin
     if(file == NULL){
