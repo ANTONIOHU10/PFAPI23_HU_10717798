@@ -772,13 +772,15 @@ node* merge(node* a, node* b)
 {
     node* result = NULL;
 
-    // Base cases
+    // gestione eccezione
     if (a == NULL)
         return b;
     else if (b == NULL)
         return a;
 
-    // Recursively sort
+    // ricorsivo, confronto i valori dei nodi
+    // priorità 1 = il nodo che ha il numero di step minore
+    // priorità 2 = a parità di step, il nodo che ha il valore di data minore
     if (a->step < b->step || (a->step == b->step && a->data < b->data)) {
         result = a;
         result->next = merge(a->next, b);
@@ -790,6 +792,7 @@ node* merge(node* a, node* b)
     return result;
 }
 
+//funzione presa da slides
 void mergeSort(node** head)
 {
     node* h = *head;
@@ -804,19 +807,20 @@ void mergeSort(node** head)
     // metto in due pezzi
     split(h, &a, &b);
 
-    // Recursively sort sublists
+    // sort ricorsivo per le liste a e b
     mergeSort(&a);
     mergeSort(&b);
 
+    // merge delle due liste ordinate
     *head = merge(a, b);
 }
 
 void sortQueueVer3(queue* queue)
 {
-    // Sort the queue by 'step' and then by 'data' using Merge Sort
+    // sort della queue
     mergeSort(&(queue->front));
 
-    // Update the 'back' pointer of the queue
+    // aggiornare il puntatore al nodo finale
     node* tempNode = queue->front;
     while (tempNode!= NULL && tempNode->next != NULL)
     {
