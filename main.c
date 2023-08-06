@@ -92,8 +92,8 @@ void sortQueueVer3(queue* queue);
 //-----------------------------maxHeap--------------------------------------
 void swapHeap(int* x, int* y);
 void heapifyHeap(stazione* station, int n, int i);
-int deleteElementHeap(stazione* stazione, int* heap_size,int key);
-void insertHeap(stazione* station, int new_num);
+int deleteElementHeap(stazione* stazione, int* dimensione,int key);
+void insertHeap(stazione* stazione, int new_num);
 
 int main() {
 
