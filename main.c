@@ -180,17 +180,18 @@ int main() {
             if(fscanf(file,"%d %d",&distanza, &autonomia) != EOF){
 
                 //------------------------se esiste la stazione-------------------------------
-                if(search(radice,distanza) == NULL){
+                stazione* temp = search(radice,distanza);
+                if(temp == NULL){
                     //printf("aggiungi-auto  ->non esiste la stazione  %d\n",distanza);
                     fprintf(file_out,"non aggiunta\n");
                 } else {
                     //se il parcheggio è già pieno
 
-                    if(search(radice,distanza)->numero_auto < DIMENSIONE_PARCHEGGIO){
+                    if(temp->numero_auto < DIMENSIONE_PARCHEGGIO){
                         //printf("aggiungi-auto  -> aggiunta auto %d alla stazione %d\n",autonomia,distanza);
 
                         //fixme aggiungo l'autonomia alla stazione, e l'autonomia massima dovrebbe essere già aggiornata
-                        insertHeap(search(radice,distanza),autonomia);
+                        insertHeap(temp,autonomia);
 
                         fprintf(file_out,"aggiunta\n");
 
@@ -220,10 +221,10 @@ int main() {
 
                             fprintf(file_out,"non rottamata\n");
                         } else{
-                            search(radice,distanza)->maxAutonomia = search(radice,distanza)->auto_parcheggiate[0];
+                            stazione_temp->maxAutonomia = stazione_temp->auto_parcheggiate[0];
 
-                            if(search(radice,distanza)->numero_auto == 0){
-                                search(radice,distanza)->maxAutonomia = 0;
+                            if(stazione_temp->numero_auto == 0){
+                                stazione_temp->maxAutonomia = 0;
                             }
                             fprintf(file_out,"rottamata\n");
                         }
@@ -240,7 +241,7 @@ int main() {
             int distanza_destinazione;
             if(fscanf(file,"%d %d",&distanza,&distanza_destinazione) != EOF){
 
-                int numeroStazioniFiltrate=0;
+                int numeroStazioniFiltrate;
                 int indice=0;
                 stazione** lista = createListStation(numero_stazioni);
 
@@ -415,10 +416,14 @@ void freeStazione(stazione* root) {
 int inorderTraversalCrescente(stazione*  radice,  stazione** lista, int* indice,int partenza,int destinazione) {
     if (radice == NULL)
         return 0;
+
+    //numero di stazioni tra partenza e destinazione incluse
     int count=0;
     count += inorderTraversalCrescente(radice->sinistro, lista, indice,partenza,destinazione);
+
     //solo le stazioni tra partenza e destinazione incluse
     if(radice->distanza >= partenza && radice->distanza <= destinazione){
+        //metto nella lista
         lista[*indice] = radice;
         (*indice)++;
         count++;
@@ -431,10 +436,12 @@ int inorderTraversalDecrescente(stazione*  radice,  stazione** lista, int* indic
     if (radice == NULL)
         return 0;
 
+    //numero di stazioni tra partenza e destinazione incluse
     int count=0;
     count += inorderTraversalDecrescente(radice->destro, lista, indice,partenza,destinazione);
     //solo le stazioni tra partenza e destinazione incluse
     if(radice->distanza <= partenza && radice->distanza >= destinazione){
+        //metto nella lista
         lista[*indice] = radice;
         (*indice)++;
         count++;
@@ -749,23 +756,28 @@ void printDecrescente(stazione** lista,int numeroStazioni,FILE* out){
 //---------------------------------------------
 void split(node* head, node** front, node** back)
 {
-    node* fast;
-    node* slow;
-    slow = head;
-    fast = head->next;
+    if (head == NULL || head->next == NULL) {
+        *front = head;
+        *back = NULL;
+        return;
+    }
 
-    while (fast != NULL) {
-        fast = fast->next;
-        if (fast != NULL) {
-            slow = slow->next;
-            fast = fast->next;
+    node* a;
+    node* b;
+    b = head;
+    a = head->next;
+
+    while (a != NULL) {
+        a = a->next;
+        if (a != NULL) {
+            b = b->next;
+            a = a->next;
         }
     }
 
-    // slow è il puntatore al nodo centrale
     *front = head;
-    *back = slow->next;
-    slow->next = NULL;
+    *back = b->next;
+    b->next = NULL;
 }
 //funzione merge sort
 node* merge(node* a, node* b)
@@ -799,7 +811,7 @@ void mergeSort(node** head)
     node* a;
     node* b;
 
-    // caso di base verifico se la -- lunghezza è 0 o 1
+    // caso di base verifico se la -- lunghezza è 0 o 1,cioè la fine
     if ((h == NULL) || (h->next == NULL)) {
         return;
     }
@@ -807,11 +819,11 @@ void mergeSort(node** head)
     // metto in due pezzi
     split(h, &a, &b);
 
-    // sort ricorsivo per le liste a e b
+    // sort ricorsivo per le liste a e b, passo la testa dei segmenti da fare sort
     mergeSort(&a);
     mergeSort(&b);
 
-    // merge delle due liste ordinate
+    // merge delle due liste ordinate, passo la testa dei segmenti da fare merge
     *head = merge(a, b);
 }
 
@@ -829,6 +841,7 @@ void sortQueueVer3(queue* queue)
     queue->back = tempNode;
 }
 //----------------------------max heap---------------------------------
+
 //scambiare due elementi nel max heap
 void swapHeap(int *x, int *y) {
     int temp = *x;
@@ -837,58 +850,61 @@ void swapHeap(int *x, int *y) {
 }
 
 //per mantenere la proprietà di maxHeap
+//n = numero elementi
+//i = indice del nodo
 void heapifyHeap(stazione* station, int n, int i) {
-    int largest = i; // Initialize largest as root
-    int left = 2 * i + 1;
-    int right = 2 * i + 2;
+    int current = i; // nodo corrente
+    int sinistro = 2 * i + 1; // nodo sinistro
+    int destro = 2 * i + 2; // nodo destro
 
-    if (left < n && station->auto_parcheggiate[left] > station->auto_parcheggiate[largest])
-        largest = left;
+    if (sinistro < n && station->auto_parcheggiate[sinistro] > station->auto_parcheggiate[current])
+        current = sinistro;
 
-    if (right < n && station->auto_parcheggiate[right] > station->auto_parcheggiate[largest])
-        largest = right;
+    if (destro < n && station->auto_parcheggiate[destro] > station->auto_parcheggiate[current])
+        current = destro;
 
-    if (largest != i) {
-        swapHeap(&station->auto_parcheggiate[i], &station->auto_parcheggiate[largest]);
-        heapifyHeap(station, n, largest);
+    if (current != i) {
+        swapHeap(&station->auto_parcheggiate[i], &station->auto_parcheggiate[current]);
+        heapifyHeap(station, n, current);
     }
 }
 
 
 //per inserire un elemento
-void insertHeap(stazione* station, int new_num) {
-    if (station->numero_auto == DIMENSIONE_PARCHEGGIO) {
+void insertHeap(stazione* stazione, int new_num) {
+    //stazione ha raggiunto la capacità massima di autonomia
+    if (stazione->numero_auto == DIMENSIONE_PARCHEGGIO) {
         return;
     }
 
     // inserire un nodo alla fine
-    station->numero_auto++;
-    station->auto_parcheggiate[station->numero_auto - 1] = new_num;
+    stazione->numero_auto++;
+    stazione->auto_parcheggiate[stazione->numero_auto - 1] = new_num;
 
     // Heapify dal basso
-    for (int i = station->numero_auto / 2 - 1; i >= 0; i--)
-        heapifyHeap(station, station->numero_auto, i);
+    for (int i = stazione->numero_auto / 2 - 1; i >= 0; i--)
+        heapifyHeap(stazione, stazione->numero_auto, i);
 
-    station->maxAutonomia = station->auto_parcheggiate[0];
+    stazione->maxAutonomia = stazione->auto_parcheggiate[0];
 }
 
 //per cancellare un elemento determinato nel max heap
-int deleteElementHeap(stazione* stazione, int *heap_size, int key) {
+int deleteElementHeap(stazione* stazione, int *dimensione, int key) {
     int i;
-    //trovare prima il elemento da cancellare
-    for(i=0; i<*heap_size; i++) {
+    //trovare prima il elemento da cancellare, l'indice
+    for(i=0; i<*dimensione; i++) {
         if(key == stazione->auto_parcheggiate[i])
             break;
     }
 
-    //se ha trovato l'elemento
-    if(i < *heap_size) {
+    //se ha trovato l'elemento entro la lunghezza
+    if(i < *dimensione) {
 
         //cambia posizione il primo e ultimo
-        swapHeap(&stazione->auto_parcheggiate[i], &stazione->auto_parcheggiate[*heap_size - 1]);
+        swapHeap(&stazione->auto_parcheggiate[i], &stazione->auto_parcheggiate[*dimensione - 1]);
 
-        (*heap_size)--;
-        heapifyHeap(stazione, *heap_size, 0);
+        (*dimensione)--;
+        heapifyHeap(stazione, *dimensione, 0);
         return key;
     }
 
