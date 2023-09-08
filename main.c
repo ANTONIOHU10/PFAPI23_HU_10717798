@@ -107,7 +107,7 @@ int main() {
     FILE *file_out = stdout;
 
     //dichiarazione per lettura
-    char operazione[20];
+    char operazione[25];
     int distanza=0;
     int numero_auto=0;
     int autonomia=0;
@@ -306,7 +306,7 @@ stazione* new_node(int distanza,int numero_auto,int* auto_parcheggiate){
 stazione* search(stazione* root, int distanza){
     if (root == NULL || root->distanza == distanza)
         return root;
-    else if (distanza > root->distanza)
+    if (distanza > root->distanza)
         return search(root->destro, distanza);
     else
         return search(root->sinistro, distanza);
@@ -359,14 +359,17 @@ stazione* delete(stazione* root, int x) {
     if (root == NULL)
         return NULL;
     //se il nodo da cancellare è maggiore del nodo corrente
-    if (x > root->distanza)
+    if (x > root->distanza){
         root->destro = delete(root->destro, x);
-        //se il nodo da cancellare è minore del nodo corrente
-    else if (x < root->distanza)
-        root->sinistro = delete(root->sinistro, x);
+    }
 
+    //se il nodo da cancellare è minore del nodo corrente
+    else if (x < root->distanza){
+        root->sinistro = delete(root->sinistro, x);
+    }
         //se il nodo da cancellare è uguale al nodo corrente
     else {
+
         //se il nodo da cancellare è una foglia, non ha figli
         if (root->sinistro == NULL && root->destro == NULL){
             free(root);
@@ -375,12 +378,16 @@ stazione* delete(stazione* root, int x) {
             //se il nodo da cancellare ha un solo figlio
         else if (root->sinistro == NULL || root->destro == NULL){
             stazione* temp;
-            if (root->sinistro == NULL)
+
+            if (root->sinistro == NULL){
                 //figlio destro è il nuovo nodo temporaneo
                 temp = root->destro;
-            else
+            }
+            else{
                 //figlio destro è il nuovo nodo temporaneo
                 temp = root->sinistro;
+            }
+
             free(root);
             return temp;
         }
@@ -414,8 +421,10 @@ void freeStazione(stazione* root) {
 
 // metto le stazioni in una lista
 int inorderTraversalCrescente(stazione*  radice,  stazione** lista, int* indice,int partenza,int destinazione) {
-    if (radice == NULL)
+    if (radice == NULL){
         return 0;
+    }
+
 
     //numero di stazioni tra partenza e destinazione incluse
     int count=0;
@@ -433,8 +442,10 @@ int inorderTraversalCrescente(stazione*  radice,  stazione** lista, int* indice,
     return count;
 }
 int inorderTraversalDecrescente(stazione*  radice,  stazione** lista, int* indice,int partenza,int destinazione) {
-    if (radice == NULL)
+    if (radice == NULL){
         return 0;
+    }
+
 
     //numero di stazioni tra partenza e destinazione incluse
     int count=0;
